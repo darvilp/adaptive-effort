@@ -2,6 +2,33 @@
 
 These are structural templates. Insert the actual task content; do not send bracketed placeholders to a child.
 
+## Routing trace
+
+The parent keeps these compact, human-readable events in an ephemeral routing ledger. Do not expose them as a machine API:
+
+```text
+dispatch · role=<role> · route=<effort/context> · purpose=<implementation|planned-review|debug|recovery>
+result   · worker=<status> · gate=<NOT_RUN|PASS|FAIL|BLOCKED>
+repair   · kind=<semantic|mechanical> · route=<effort/context>
+escalate · from=<effort> · to=<effort> · fingerprint=<behavior|boundary|invariant>
+closeout · gate=<status> · escalations=<count> · stop=<reason>
+```
+
+Attach evidence with compact detail lines:
+
+```text
+boundaries · <name>=<PASS|FAIL|DEFERRED|NOT_APPLICABLE>...
+fingerprint · value=<behavior|boundary|invariant>
+```
+
+These are detail lines, not event types. `boundaries` is an adjacent detail line that records named Superpowers-defined boundary evidence beside the relevant `result`. It is not the downstream `gate` field and not a sixth counted event type. `gate` reports only the downstream acceptance-gate status from the five event forms.
+
+Every classified semantic failure records a `fingerprint` detail line adjacent to the failing `result` and before any `repair` or `escalate` event. A later escalation reuses that exact fingerprint in its `fingerprint=` field. This makes a repaired first failure available for comparison if the same behavior and invariant recur at another boundary.
+
+Worker status and downstream gate status are separate. A worker can report `FIXED` while an independent gate still fails.
+
+Carry Superpowers-defined boundary names and expected evidence in the handoff. Record each boundary result as PASS, FAIL, DEFERRED, or NOT_APPLICABLE. Missing expected boundary evidence is missing context, not an implementation defect.
+
 ## Implementer
 
 ```text
@@ -43,6 +70,28 @@ FINAL RESPONSE
 Return exactly one status: DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, or BLOCKED.
 Include changed files, commands run, results, and concise concerns. Do not claim success without fresh evidence.
 ```
+
+## Missing-context continuation
+
+Send this once to the same worker thread after its first concrete `NEEDS_CONTEXT` result:
+
+```text
+The current worker handoff omitted required context. This is the one bundled same-thread context continuation for this worker dispatch.
+
+MISSING ITEMS
+<all concrete missing files, contract clauses, fixtures, or corrected pointers currently available from the approved plan or repository>
+
+CONTINUATION LIMIT
+Keep the existing effort and thread. This continuation does not consume the semantic or mechanical correction allowance, a debugger or recovery stage, or an escalation.
+
+STOP CONDITIONS
+If any required item is unavailable, supplying it needs new authority, or any second context request occurs, including for a newly revealed item, stop automatic handling. Return:
+
+terminal result: result · worker=NEEDS_CONTEXT · gate=BLOCKED
+terminal closeout: closeout · gate=BLOCKED · escalations=<unchanged> · stop=missing-context
+```
+
+This continuation is not a `repair` or `escalate` event and does not add an event form. The next worker result and any terminal closeout use the existing forms.
 
 ## Same-thread repair
 
@@ -91,6 +140,36 @@ Return FIXED, NEEDS_CONTEXT, ENVIRONMENT_BLOCKED, or DESIGN_CONFLICT.
 Include root cause, changed files, commands, results, and any scope concern.
 ```
 
+## Same-thread mechanical correction
+
+Send this to the writer thread that produced the current diff being checked:
+
+```text
+The current diff failed a deterministic hygiene gate. Make only the mechanical transformation below.
+
+TARGET THREAD
+<implementer, debugger, or explicitly authorized recovery writer that produced the current diff>
+
+EXACT TARGETS / TRANSFORMATION
+<paths and deterministic edit or generation command>
+
+LAST SEMANTICALLY ACCEPTED DIFF
+<comparison point before the mechanical change>
+
+SEMANTIC-EQUIVALENCE COMMAND / RESULT
+<command that compares semantic content, plus required result>
+
+FAILED HYGIENE GATE
+<exact command and failure output>
+
+REQUIRED RERUN
+<the same hygiene command that must pass>
+
+Preserve the approved contract and write scope. Return the changed paths, equivalence result, and rerun evidence.
+```
+
+The comparison point is the last semantically accepted diff. An independent review is not required before establishing that comparison point.
+
 ## Recovery diagnostician
 
 ```text
@@ -132,3 +211,7 @@ Adaptive Effort:
 - do not expand into implementation
 - return concrete findings with file/symbol references
 ```
+
+## Closeout
+
+A compact closeout is required after the acceptance gate passes, automatic handling stops, or work returns to planning. Record the gate, true escalation count, and stop reason. Detailed AAR is request-only. Usage and worker-count observations are not telemetry or topology decisions; report them only as available run observations.

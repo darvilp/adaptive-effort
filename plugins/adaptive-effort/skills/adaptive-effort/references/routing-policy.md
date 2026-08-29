@@ -7,6 +7,7 @@
 - Child context is fresh unless a concrete dependency requires a small recent-turn fork.
 - `xhigh`, `max`, and `ultra` are not selected automatically.
 - Superpowers workflow requirements outrank cost-saving preferences.
+- Planned medium/high reviews never count as escalations. They are planned routes selected by Superpowers.
 
 ## Mode matrix
 
@@ -39,6 +40,8 @@ Treat a task as higher risk when it involves one or more of:
 - weak or unavailable deterministic tests
 
 Risk can raise review effort without raising the initial implementer.
+
+Adaptive Effort records a dispatch purpose as `implementation`, `planned-review`, `debug`, or `recovery`. Only corrective upward effort transitions increment the escalation count.
 
 ## Spawn defaults
 

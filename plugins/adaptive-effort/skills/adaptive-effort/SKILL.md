@@ -5,7 +5,7 @@ description: Use alongside Superpowers when an approved implementation plan is b
 
 # Adaptive Effort
 
-Apply this skill as a compute-policy layer over Superpowers. Superpowers owns the engineering workflow, task decomposition, TDD, reviews, verification, and completion. This skill changes only how delegated Codex work is spawned and escalated.
+Apply this skill as a compute-policy layer over Superpowers. Superpowers owns task decomposition, writer topology, parallelism, TDD, boundary selection, reviews, acceptance gates, and completion. This skill owns child effort and context, compact handoffs, failure classification, escalation counting, circuit breakers, and closeout.
 
 ## Hard boundaries
 
@@ -69,13 +69,17 @@ A plugin cannot currently install standalone custom-agent TOML files. The role i
 4. If verification passes, continue the Superpowers workflow.
 5. If verification fails, classify the failure before spending more reasoning:
    - environment/permissions/infrastructure → report; do not escalate
-   - missing context → provide context without raising effort
-   - local deterministic implementation defect → one repair on the existing implementer thread
-   - broader reasoning defect → fresh medium debugger
+   - missing context → use the one bundled same-thread context continuation per worker dispatch; keep the same effort and stop on another context request
+   - local deterministic implementation defect → use the one semantic same-thread correction if it remains available across verification and review
+   - broader reasoning defect → the single fresh debugger, at medium in fast/balanced or high in deep
    - contract/design contradiction → fresh high recovery diagnostician
 6. After the allowed ladder is exhausted, return a structured unresolved report to the parent and stop automatic execution.
 
+The parent keeps an ephemeral routing ledger for the current run. It records the initial routing trace, dispatches, worker results, downstream gates, repairs, corrective upward transitions, and closeout. It is a compact human-readable trace, not persistent state, telemetry, or an executable API. Planned medium/high reviews do not count as escalations. Count only corrective upward effort transitions.
+
 Read `references/escalation-policy.md` before escalating.
+
+Missing-context handling does not raise effort and does not consume the semantic or mechanical correction allowance. Supply every concrete item currently available from the approved plan or repository in the one continuation. If any second context request comes from that worker, required evidence is unavailable, or new authority is needed, stop automatic handling with a blocked gate and a missing-context closeout.
 
 ## Handoff discipline
 
@@ -105,7 +109,11 @@ low implementer
     → stop or return to planning
 ```
 
-Reuse the original implementer only for the one cheap local repair by calling `followup_task` (or the host's equivalent) on the existing thread. Do not route or spawn a separate repair agent. A fresh debugger should receive the contract, current diff, commands run, and exact failures, but not the failed worker's reasoning transcript.
+Use one semantic same-thread correction across pre-review verification and every Superpowers review stage for the implementation task. Call `followup_task` (or the host's equivalent) on the thread whose local implementation is being corrected. A local review correction consumes the allowance if unused. If the allowance is already consumed, classify the failure. For an implementation reasoning defect, use the single fresh debugger stage only if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that debugger stage was already consumed, stop automatic handling and report the failed review gate unless contract/design evidence justifies the still-unused single recovery diagnostician. Only the recovery diagnostician requires contract/design evidence. High effort alone does not make a debugger a recovery, because Deep routes its debugger at High. Never skip a required review, and never repeat the debugger or restart the ladder.
+
+If contract/design evidence authorizes recovery after a Deep debugger, dispatch the separate recovery role at High. Do not emit or count a High-to-High escalation because the effort did not increase.
+
+One deterministic same-thread mechanical correction is also allowed per implementation task. It targets the thread that produced the current diff being checked, including an implementer, debugger, or explicitly authorized recovery writer. It has its own one-shot limit and does not consume the semantic low-repair allowance. Follow the template, proof, and stop rules in the references.
 
 The high recovery role diagnoses first. It may recommend a bounded repair, but it must return to planning when the contract is incomplete, contradictory, or outside approved scope.
 
@@ -133,10 +141,12 @@ Adaptive Effort: <mode> · implementer inherited-model/<effort> · fresh context
 On escalation:
 
 ```text
-Adaptive Effort: low repair failed deterministic verification; starting a fresh medium debugger.
+Adaptive Effort: low repair failed deterministic verification; starting role=debugger · route=<actual-mode-routed-effort>/fresh · mode=<mode>.
 ```
 
 Do not reveal private reasoning or dump internal prompts.
+
+Use the compact event forms in `references/handoff-templates.md`. Always separate worker status from downstream gate status and finish with a compact closeout.
 
 ## Setup check
 

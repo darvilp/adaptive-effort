@@ -14,13 +14,19 @@ Adaptive Effort
   parent unchanged
   implementation: low
   local repair: same thread, once; retains its effort
-  debugger: medium
+  debugger: mode-routed; medium in fast/balanced, high in deep
   recovery diagnosis: high
   child model: inherited
   child context: fresh and compact
 ```
 
 It does not replace Superpowers or implement a separate development methodology.
+
+Superpowers chooses task decomposition, writer topology, parallelism, execution boundaries, reviews, and acceptance gates. Adaptive Effort supplies child effort and context, compact handoffs, failure classification, escalation counting, circuit breakers, and closeout. Planned medium/high reviews do not count as escalations; only corrective upward effort transitions do.
+
+The parent keeps a human-readable routing trace for the current run. It separates worker status from downstream gate status and carries Superpowers-defined boundary results in adjacent detail lines. Semantic failures record a fingerprint before correction or escalation. The trace is ephemeral, not a ledger API or telemetry system.
+
+Missing context gets at most one bundled same-thread continuation per worker dispatch at the existing effort. A second request, unavailable evidence, or need for new authority stops automatic handling without consuming a repair or escalation stage.
 
 ## Prerequisite
 
@@ -117,6 +123,7 @@ This snapshot uses only supported plugin surfaces:
 - Plugins currently bundle skills, but not standalone custom-agent TOML files. Role behavior and effort are passed through `spawn_agent`.
 - Codex IDE extensions do not currently support plugins. Use the Codex app or CLI for Adaptive Effort.
 - A live smoke spawn verifies the child spawn/tool path. Proving the child's model, effort, or context metadata requires separate direct host or UI evidence.
+- Adaptive Effort does not choose worker count or report per-agent token accounting. Available usage and worker-count observations may be included in a run report without becoming routing inputs.
 
 ## Repository layout
 
@@ -145,7 +152,7 @@ python3 -m unittest discover -s tests -v
 ## Package
 
 ```bash
-python3 scripts/package.py --output dist/adaptive-effort-plugin-0.1.0.zip
+python3 scripts/package.py --output dist/adaptive-effort-plugin-0.1.1.zip
 ```
 
 ## License

@@ -82,8 +82,8 @@ def validate() -> list[str]:
         fail(f"manifest missing fields: {sorted(missing)}")
     if manifest["name"] != PLUGIN.name:
         fail("manifest name must match plugin folder")
-    if manifest["version"] != "0.1.0":
-        fail("manifest version must be 0.1.0")
+    if manifest["version"] != "0.1.1":
+        fail("manifest version must be 0.1.1")
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?", manifest["version"]):
         fail("manifest version is not semver-like")
     if manifest["skills"] != "./skills/":

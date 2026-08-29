@@ -71,7 +71,7 @@ Codex
       ├── compact context handoff
       ├── evidence-driven escalation
       ├── circuit breakers
-      └── routing observability
+      └── compact run closeout
 ```
 
 Adaptive Effort is a separate plugin. It does not vendor, fork, or duplicate Superpowers workflow skills.
@@ -89,7 +89,7 @@ Adaptive Effort should:
 5. Increase reasoning effort only when verification evidence justifies it.
 6. Avoid copying large parent conversations into worker contexts.
 7. Prevent unbounded repair, review, or escalation loops.
-8. Expose enough routing information to evaluate whether the policy saves compute.
+8. Expose a compact ephemeral routing trace and closeout for the current run.
 9. Work through Codex's native plugin and agent mechanisms.
 10. Install from a Git-hosted community marketplace.
 
@@ -263,20 +263,24 @@ The plugin should avoid repeatedly emitting this warning during unrelated work.
 What should be built?
 How should it be designed?
 How should work be decomposed?
+What writer topology and parallelism are safe?
+Which execution boundaries apply?
 What tests should exist?
 When should implementation begin?
 What review is required?
-What counts as complete?
+Which acceptance gates apply and what counts as complete?
 ```
 
 ### Adaptive Effort owns
 
 ```text
 At what reasoning effort should a child run?
-Should the existing worker receive one cheap repair?
+What compact context should a child receive?
+Is a failure semantic, mechanical, environmental, or missing context?
 When does evidence justify escalation?
-How much conversational context should a child inherit?
+How many true corrective upward transitions occurred?
 When must automatic escalation stop?
+What compact closeout should the parent record?
 ```
 
 Instruction priority:
@@ -524,7 +528,8 @@ Parent with large architecture context
                  │
                  └── diff + failures
                            ↓
-                    Medium debugger
+                    Mode-routed debugger
+                 Medium Fast/Balanced, High Deep
 ```
 
 Avoid propagating the full parent transcript through every child.
@@ -553,8 +558,9 @@ workflow          │
             PASS       FAIL
              │           │
              ▼           ▼
-          continue    FRESH MEDIUM
-                       DEBUGGER
+          continue    FRESH DEBUGGER
+                    MEDIUM FAST/BALANCED
+                         HIGH DEEP
                           │
                       verification
                        /       \
@@ -580,7 +586,7 @@ Automatic execution is bounded.
 
 ## 16. Cheap repair
 
-The original Low implementer receives at most one normal repair attempt when:
+The implementation task receives at most one semantic same-thread correction across pre-review verification and all Superpowers review stages when:
 
 - failure is deterministic
 - the problem appears local
@@ -598,15 +604,19 @@ Observed 4 attempts.
 Correct the implementation while preserving the approved contract.
 ```
 
-If the repair still fails, start a fresh Medium debugger.
+If the correction still fails, or a later local review finding occurs after the allowance is consumed, classify the failure. An implementation reasoning defect uses the one debugger stage if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that stage was already consumed, automatic handling stops and reports the failed review gate unless contract or design evidence justifies the still-unused recovery diagnostician. A Deep debugger is High because of its mode, not because it is recovery. Required reviews still run, and the ladder never repeats or restarts.
+
+A deterministic hygiene failure may receive one separate same-thread mechanical correction on the thread that produced the current diff. It requires exact targets and transformation, comparison against the last semantically accepted diff, a semantic-equivalence command and result, and a rerun of the failed hygiene gate. A second mechanical correction stops automatic handling without raising effort.
+
+A worker may receive one bundled same-thread context continuation per dispatch. Supply all currently available items at the worker's existing effort. The continuation consumes no semantic correction, mechanical correction, debugger, recovery, or escalation count. A second request, unavailable required evidence, or need for new authority stops with `worker=NEEDS_CONTEXT`, a blocked gate, and `stop=missing-context`.
 
 ---
 
 ## 17. Escalation policy
 
-### Low → Medium
+### Implementation or repair to debugger
 
-Escalate when:
+Use the one mode-routed debugger stage when:
 
 - the Low repair fails
 - the failure involves non-obvious interactions
@@ -614,16 +624,19 @@ Escalate when:
 - repository behavior differs from implementation assumptions
 - broader control-flow or data-flow analysis is required
 
-### Medium → High
+In Fast and Balanced, moving from a Low worker to the Medium debugger is one corrective upward effort transition. Deep routes the debugger at High.
 
-Escalate when:
+### Debugger to recovery
 
-- deterministic verification still fails
+Enter recovery only when independent contract or design evidence shows one of these conditions:
+
 - the contract appears incomplete or internally inconsistent
 - repository behavior contradicts an architectural assumption
 - required changes escape the approved scope
 - testing exposes an unstated invariant
 - the debugger determines that the plan itself may be wrong
+
+Repeated verification failure or a repeated fingerprint alone does not authorize recovery. In Fast and Balanced, the Medium debugger to High recovery move is a counted upward effort transition. In Deep, dispatch the separate High recovery role without an `escalate` event or count increase because the debugger already ran at High.
 
 ### Do not escalate reasoning for
 
@@ -637,6 +650,10 @@ Escalate when:
 
 These are operational failures rather than reasoning failures.
 
+Only corrective upward effort transitions count as escalations. Initial implementation routes and planned Medium or High reviews do not. Every classified semantic failure records its behavior, boundary, and invariant fingerprint adjacent to the failing result before correction or escalation. An escalation reuses it. Matching behavior and invariant remain materially similar across different boundaries.
+
+Adaptive Effort carries only boundaries selected by Superpowers. An adjacent `boundaries` detail line records named results as PASS, FAIL, DEFERRED, or NOT_APPLICABLE. It does not alter the downstream acceptance-gate field or add a sixth counted event. Missing expected evidence is a context failure, not an implementation defect. The same worker gets one bundled continuation at unchanged effort; another request or unavailable evidence stops automatic handling.
+
 ---
 
 ## 18. Circuit breakers
@@ -646,8 +663,10 @@ Default limits:
 ```text
 Low implementation attempts:  1
 Low repair attempts:          1
-Medium debugger attempts:     1
-High recovery attempts:       1
+Mechanical corrections:      1, separate
+Context continuations:        1 per worker dispatch, separate
+Debugger attempts:            1, Medium Fast/Balanced or High Deep
+Recovery attempts:            1, High
 ```
 
 When the ladder is exhausted, automatic execution stops.
@@ -658,16 +677,18 @@ The parent receives a structured summary:
 Implementation unresolved.
 
 Attempts:
-- Low implementation: failed X
-- Low repair: failed Y
-- Medium debugging: identified Z
-- High recovery: contract likely conflicts with A
+- implementation: route=<actual-effort>/<context> · failed X
+- semantic correction: route=<retained-effort>/same-thread · failed Y
+- debugger: route=<actual-mode-routed-effort>/fresh · mode=<mode> · identified Z
+- recovery diagnostician: route=high/fresh · contract likely conflicts with A
 
 Recommended action:
 Return to planning and revisit assumption B.
 ```
 
 No additional agent sequence is spawned automatically.
+
+The parent records a compact closeout with gate status, true escalation count, and stop reason. A detailed after-action report is produced only on request.
 
 ---
 
@@ -867,9 +888,8 @@ Context: fresh
 Escalation:
 
 ```text
-Adaptive Effort
-Low repair failed deterministic verification.
-Escalating to a fresh Medium debugger.
+Adaptive Effort: low repair failed deterministic verification;
+starting role=debugger · route=<actual-mode-routed-effort>/fresh · mode=<mode>.
 ```
 
 Conceptual failure:
@@ -885,10 +905,10 @@ Optional completion summary:
 ```text
 Adaptive Effort summary
 
-Low implementers:  1
-Low repairs:       1
-Medium debuggers:  0
-High recoveries:   0
+Implementation attempts:       1
+Semantic corrections:         1
+Debugger attempts:            0, route recorded when used
+Recovery diagnostician runs:  0, separate role
 ```
 
 Do not expose private reasoning traces.
@@ -971,13 +991,37 @@ Low fails, Low repair succeeds
 → no Medium
 
 Low + repair fail
-→ fresh Medium debugger
+→ fresh mode-routed debugger
 
-Medium identifies conceptual problem
-→ High recovery
+Debugger and deterministic evidence identify a contract/design problem
+→ High recovery role
+
+Repeated fingerprint without contract/design evidence
+→ no recovery; stop when the debugger is spent
 
 Environment failure
 → no reasoning escalation
+
+Planned High review
+→ zero escalation count
+
+Low → Medium → High corrective transitions
+→ two escalations even across different boundaries
+
+Mechanical correction succeeds
+→ semantic repair remains available
+
+Second mechanical correction
+→ automatic handling stops without higher effort
+
+Missing boundary evidence
+→ one same-thread context continuation at unchanged effort
+
+Second context request or unavailable evidence
+→ blocked gate and missing-context closeout
+
+Deferred boundary
+→ carried as DEFERRED
 
 Persistent failure
 → circuit breaker
@@ -1053,7 +1097,7 @@ B. Superpowers + Adaptive Effort
    recovery High only when evidence warrants
 ```
 
-Measure:
+Observe when the host exposes aggregate data:
 
 ```text
 task completion rate
@@ -1061,12 +1105,10 @@ acceptance-test success
 regressions
 review findings
 wall-clock duration
-input tokens
-reasoning tokens
-cached tokens
-number of child agents
 number of escalation events
 ```
+
+Adaptive Effort does not promise per-agent token accounting and does not choose worker count. Usage and worker-count observations are not telemetry or topology decisions.
 
 Run the same comparison with a Medium parent.
 
@@ -1083,7 +1125,7 @@ The plugin snapshot contains:
 - Superpowers dependency detection
 - one implicit Adaptive Effort skill
 - Low implementer
-- Medium debugger
+- mode-routed debugger, Medium in Fast/Balanced and High in Deep
 - High recovery diagnostician
 - inherited child model
 - fresh-context handoff policy

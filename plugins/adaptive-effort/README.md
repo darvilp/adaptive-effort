@@ -2,7 +2,7 @@
 
 Adaptive Effort is a skills-only Codex plugin that adds reasoning-effort routing and bounded escalation to Superpowers implementation workflows.
 
-It keeps the parent model and effort selected by the user, then applies this default child ladder:
+It keeps the parent model and effort selected by the user, then applies this Balanced default child ladder:
 
 ```text
 low implementation
@@ -13,6 +13,10 @@ low implementation
 ```
 
 Superpowers remains responsible for planning, TDD, reviews, and verification.
+
+Superpowers also chooses task boundaries, writer topology, parallelism, and acceptance gates. Adaptive Effort carries those choices into compact child handoffs, classifies failures, counts only corrective upward effort transitions, and records a compact closeout. Planned higher-effort reviews are not escalations.
+
+One semantic correction is shared across verification and every Superpowers review stage. A separate one-shot mechanical correction targets the writer of the current diff. Adaptive Effort never chooses new execution boundaries. Missing expected boundary evidence gets one bundled same-thread continuation at the existing effort; another request or unavailable evidence stops automatic handling without spending a repair or escalation stage.
 
 ## Requirements
 

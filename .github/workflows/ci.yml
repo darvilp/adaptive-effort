@@ -23,19 +23,19 @@ jobs:
         run: |
           first_dir="$(mktemp -d)"
           second_dir="$(mktemp -d)"
-          python3 scripts/package.py --output "$first_dir/adaptive-effort-plugin-0.1.0.zip" --skip-tests
-          python3 scripts/package.py --output "$second_dir/adaptive-effort-plugin-0.1.0.zip" --skip-tests
-          cmp "$first_dir/adaptive-effort-plugin-0.1.0.zip" "$second_dir/adaptive-effort-plugin-0.1.0.zip"
+          python3 scripts/package.py --output "$first_dir/adaptive-effort-plugin-0.1.1.zip" --skip-tests
+          python3 scripts/package.py --output "$second_dir/adaptive-effort-plugin-0.1.1.zip" --skip-tests
+          cmp "$first_dir/adaptive-effort-plugin-0.1.1.zip" "$second_dir/adaptive-effort-plugin-0.1.1.zip"
       - name: Package artifact
-        run: python3 scripts/package.py --output dist/adaptive-effort-plugin-0.1.0.zip --skip-tests
+        run: python3 scripts/package.py --output dist/adaptive-effort-plugin-0.1.1.zip --skip-tests
       - name: Verify checksums
         run: |
           sha256sum -c MANIFEST.sha256
           cd dist
-          sha256sum -c adaptive-effort-plugin-0.1.0.zip.sha256
+          sha256sum -c adaptive-effort-plugin-0.1.1.zip.sha256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: adaptive-effort-plugin
           path: |
-            dist/adaptive-effort-plugin-0.1.0.zip
-            dist/adaptive-effort-plugin-0.1.0.zip.sha256
+            dist/adaptive-effort-plugin-0.1.1.zip
+            dist/adaptive-effort-plugin-0.1.1.zip.sha256

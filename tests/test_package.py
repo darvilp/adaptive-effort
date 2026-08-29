@@ -35,7 +35,7 @@ class PackageTests(unittest.TestCase):
     def test_manifest_is_skills_only_and_paths_exist(self) -> None:
         manifest = json.loads((PLUGIN / ".codex-plugin/plugin.json").read_text())
         self.assertEqual(manifest["name"], "adaptive-effort")
-        self.assertEqual(manifest["version"], "0.1.0")
+        self.assertEqual(manifest["version"], "0.1.1")
         self.assertEqual(manifest["skills"], "./skills/")
         self.assertNotIn("agents", manifest)
         for key in ("composerIcon", "logo"):

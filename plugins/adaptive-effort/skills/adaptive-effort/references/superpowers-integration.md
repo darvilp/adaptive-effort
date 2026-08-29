@@ -5,11 +5,13 @@
 Superpowers owns:
 
 - brainstorming and design
-- implementation plans and task boundaries
+- implementation plans and task decomposition
+- writer topology and parallelism
+- task and boundary selection
 - TDD requirements
 - subagent-driven development
 - spec and quality review ordering
-- verification before completion
+- acceptance gates and verification before completion
 - branch completion
 
 Adaptive Effort owns:
@@ -17,9 +19,9 @@ Adaptive Effort owns:
 - child reasoning-effort selection
 - child model inheritance
 - fresh compact handoffs
-- one cheap repair
-- evidence-based escalation
-- circuit breakers and concise routing traces
+- semantic and mechanical repair accounting
+- failure classification and escalation counting
+- circuit breakers, concise routing traces, and closeout
 
 Explicit user instructions outrank both. Superpowers workflow requirements outrank Adaptive Effort cost preferences.
 
@@ -49,6 +51,8 @@ Preserve these Superpowers semantics:
 
 Adaptive Effort changes the spawn effort and bounds repeated failures. It does not remove the two-stage review.
 
+Carry only Superpowers-defined execution boundaries. Adaptive Effort records their evidence and results but does not add, remove, merge, defer, or declare them not applicable. If expected evidence is absent, classify that as missing context rather than an implementation defect. Use one bundled same-thread context continuation per worker dispatch to supply all currently available items. It does not raise effort and does not consume the semantic or mechanical correction allowance. If evidence remains unavailable, supplying it needs new authority, or the worker makes any second context request, including for a newly revealed item, stop automatic handling with a blocked gate and a missing-context closeout.
+
 ## TDD
 
 The implementer handoff must retain Superpowers TDD instructions and pass/fail criteria. Adaptive Effort does not treat green self-authored tests as sufficient evidence when independent acceptance checks exist.
@@ -59,11 +63,17 @@ The parent or an independent review step should ensure the implementer did not w
 
 Superpowers decides which reviewers are mandatory. Adaptive Effort assigns medium effort to routine review and high effort to high-risk/deep review.
 
+A planned medium or high reviewer is not an escalation. Only a corrective transition from lower to higher effort after classified failure increments the escalation count.
+
 If a reviewer finds an implementation defect:
 
-- send one focused correction to the existing implementer when it remains local
+- use the one semantic same-thread correction shared across pre-review verification and all Superpowers review stages when it remains unused; a local review correction consumes it
 - re-run the same reviewer as Superpowers requires
-- if substantially the same issue persists twice, classify it instead of looping indefinitely
+- If the allowance is already consumed, classify the failure; for an implementation reasoning defect, use the single fresh debugger stage only if it remains unused, routed at Medium in Fast/Balanced and High in Deep
+- If that debugger stage was already consumed, stop automatic handling and report the failed review gate unless contract/design evidence justifies the still-unused single recovery diagnostician
+- Only the recovery diagnostician requires contract/design evidence; High effort alone does not make a debugger a recovery, because Deep routes its debugger at High
+
+Never skip the required review, and never repeat the debugger or restart the ladder. Re-run the same reviewer after the corrective route completes.
 
 ## Conflict handling
 

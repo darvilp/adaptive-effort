@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+      - name: Validate
+        run: python3 scripts/validate.py
+      - name: Test
+        run: python3 -m unittest discover -s tests -v
+      - name: Verify deterministic package
+        run: |
+          first_dir="$(mktemp -d)"
+          second_dir="$(mktemp -d)"
+          python3 scripts/package.py --output "$first_dir/adaptive-effort-plugin-0.1.0.zip" --skip-tests
+          python3 scripts/package.py --output "$second_dir/adaptive-effort-plugin-0.1.0.zip" --skip-tests
+          cmp "$first_dir/adaptive-effort-plugin-0.1.0.zip" "$second_dir/adaptive-effort-plugin-0.1.0.zip"
+      - name: Package artifact
+        run: python3 scripts/package.py --output dist/adaptive-effort-plugin-0.1.0.zip --skip-tests
+      - name: Verify checksums
+        run: |
+          sha256sum -c MANIFEST.sha256
+          cd dist
+          sha256sum -c adaptive-effort-plugin-0.1.0.zip.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: adaptive-effort-plugin
+          path: |
+            dist/adaptive-effort-plugin-0.1.0.zip
+            dist/adaptive-effort-plugin-0.1.0.zip.sha256

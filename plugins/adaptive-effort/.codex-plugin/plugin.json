@@ -1,0 +1,42 @@
+{
+  "name": "adaptive-effort",
+  "version": "0.1.0",
+  "description": "Evidence-driven Codex reasoning-effort routing for Superpowers implementation workflows.",
+  "author": {
+    "name": "darvilp",
+    "url": "https://github.com/darvilp"
+  },
+  "homepage": "https://github.com/darvilp/adaptive-effort",
+  "repository": "https://github.com/darvilp/adaptive-effort",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "superpowers",
+    "subagents",
+    "reasoning-effort",
+    "tdd",
+    "cost-control"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Adaptive Effort",
+    "shortDescription": "Route Superpowers workers across Codex reasoning levels",
+    "longDescription": "Keep the user-selected parent model and effort, run bounded implementation at lower effort, and escalate only after deterministic evidence warrants it.",
+    "developerName": "darvilp",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Implement this plan with Adaptive Effort.",
+      "Use balanced Adaptive Effort handling.",
+      "Check Adaptive Effort setup."
+    ],
+    "websiteURL": "https://github.com/darvilp/adaptive-effort",
+    "brandColor": "#2563EB",
+    "composerIcon": "./assets/adaptive-effort-small.svg",
+    "logo": "./assets/adaptive-effort.svg"
+  }
+}

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Adaptive Effort"
+  short_description: "Route Superpowers workers by reasoning effort"
+  brand_color: "#2563EB"
+  default_prompt: "Implement the approved Superpowers plan with balanced Adaptive Effort routing."
+policy:
+  allow_implicit_invocation: true

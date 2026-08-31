@@ -15,6 +15,21 @@ from typing import Literal
 Mode = Literal["fast", "balanced", "deep"]
 Role = Literal["implementer", "integration_implementer", "debugger", "recovery", "reviewer"]
 Risk = Literal["routine", "high"]
+FailureClass = Literal[
+    "environment failure",
+    "missing-context failure",
+    "local deterministic implementation defect",
+    "implementation-reasoning defect",
+    "contract/design defect",
+]
+CorrectiveRoute = Literal[
+    "report",
+    "context_continuation",
+    "semantic_correction",
+    "debugger",
+    "recovery",
+    "stop",
+]
 
 
 @dataclass(frozen=True)
@@ -56,6 +71,25 @@ def route(mode: Mode, role: Role, risk: Risk = "routine") -> Route:
         role=role,
         reasoning_effort=effort,
     )
+
+
+def failure_route(
+    classification: FailureClass,
+    *,
+    independent_contract_design_evidence: bool = False,
+) -> CorrectiveRoute:
+    """Map a classified failure to the next policy route."""
+    if classification == "environment failure":
+        return "report"
+    if classification == "missing-context failure":
+        return "context_continuation"
+    if classification == "local deterministic implementation defect":
+        return "semantic_correction"
+    if classification == "implementation-reasoning defect":
+        return "debugger"
+    if classification == "contract/design defect":
+        return "recovery" if independent_contract_design_evidence else "stop"
+    raise ValueError(f"unsupported failure classification: {classification}")
 
 
 def main() -> int:

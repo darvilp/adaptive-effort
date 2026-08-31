@@ -91,7 +91,7 @@ Adaptive Effort should:
 7. Prevent unbounded repair, review, or escalation loops.
 8. Expose a compact ephemeral routing trace and closeout for the current run.
 9. Work through Codex's native plugin and agent mechanisms.
-10. Install from a Git-hosted community marketplace.
+10. Install from the Universal Plugins Directory or a Git marketplace.
 
 ---
 
@@ -135,7 +135,7 @@ Implementer: automatically switch to Luna
 
 ## 5. Distribution
 
-Adaptive Effort is distributed as a native Codex plugin through a Git-hosted community marketplace.
+Adaptive Effort is prepared for distribution as a native Codex plugin through the Universal Plugins Directory. The repository also supports installation through a Git marketplace.
 
 Repository layout:
 
@@ -1121,7 +1121,7 @@ The plugin is successful only if lower compute use does not materially degrade e
 The plugin snapshot contains:
 
 - native Codex plugin manifest
-- Git community marketplace manifest
+- Git marketplace manifest
 - Superpowers dependency detection
 - one implicit Adaptive Effort skill
 - Low implementer
@@ -1205,7 +1205,7 @@ Prerequisite:
 Install and enable Superpowers in Codex.
 ```
 
-Add the community marketplace and plugin:
+Add the Git marketplace and plugin:
 
 ```bash
 codex plugin marketplace add darvilp/adaptive-effort --ref main

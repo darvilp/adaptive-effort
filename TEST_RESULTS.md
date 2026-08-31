@@ -1,6 +1,6 @@
 # Test results
 
-Snapshot date: 2026-08-29
+Snapshot date: 2026-08-31
 
 ## Completed
 
@@ -23,6 +23,9 @@ Snapshot date: 2026-08-29
 - same-thread repair without a repair spawn
 - allowlisted repository packaging and exact manifest coverage
 - deterministic ZIP packaging and checksums
+- rejection of forbidden files, special files, and empty forbidden directories
+- exact approved semantics for all eight submission review cases
+- deterministic public evidence replay for the same-thread repair and fresh debugger cases
 - planned-review exclusion from escalation counts
 - separate worker and downstream gate outcomes
 - semantic fingerprints across execution boundaries
@@ -40,11 +43,19 @@ Snapshot date: 2026-08-29
 
 Automated suite:
 
-The 0.1.1 pre-push release acceptance commands passed with the real ambient `CODEX_HOME`. This proves the source validator, 46 unit tests, plugin schema validator, repository manifest, adjacent archive checksum, and deterministic package bytes for the repository snapshot.
+Fresh local verification for this commit:
 
-The release archive is `dist/adaptive-effort-plugin-0.1.1.zip`. Two additional `--skip-tests` archives built in separate temporary directories matched each other and the `dist` archive byte-for-byte. The release handoff records the final SHA-256 outside the archive, avoiding a self-referential checksum claim inside packaged documentation.
+`scripts/validate.py` passed, and the full unit suite passed. Independent source and submission builds were byte-identical. `sha256sum -c MANIFEST.sha256` passed, and `scripts/verify_submission.py` verified exactly 13 sorted regular files under one `adaptive-effort/` directory. Final dist checks rerun these commands after this evidence update.
 
-`git diff --check` passed. Changed public files contained no CRLF or trailing whitespace. Scans found no publisher placeholder, no active 0.1.0 package command or path, and no tracked generated artifact. The only 0.1.0 archive-name match is a package regression assertion that excludes the obsolete archive. `scripts/policy.py` and `doctor.py` are unchanged.
+CI is configured to run validation, the unit suite, independent double builds, checksum checks, submission-structure verification, and artifact upload on a future push or pull request. No CI result is claimed for this unpushed commit.
+
+The installed plugin-creator validator reported only its stale rejection of `policy.products`. The CODEX-only product gate remains in the skill metadata as required.
+
+The 0.1.1 pre-push release acceptance evidence below remains historical. Current 0.1.2 local repository verification does not establish portal, CI, or publication gates.
+
+The historical 0.1.1 release archive was `dist/adaptive-effort-plugin-0.1.1.zip`. The 0.1.2 source and submission archive names are `dist/adaptive-effort-source-0.1.2.zip` and `dist/adaptive-effort-plugin-0.1.2.zip`.
+
+`git diff --check` passed. Changed public files contained no CRLF or trailing whitespace. Scans found no publisher placeholder, no active 0.1.0 package command or path, and no tracked generated artifact. The only 0.1.0 archive-name match is a package regression assertion that excludes the obsolete archive. `plugins/adaptive-effort/skills/adaptive-effort/scripts/doctor.py` and the existing `route()` effort behavior and matrix are unchanged. `plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py` now adds the canonical failure-class-to-corrective-route mapping without changing the approved effort matrix.
 
 The doctor CLI regression launches the installed script from its skill directory while passing a separate trusted project through `--project-dir`. A project `.codex/config.toml` that disables agents produces exit 1, `BLOCKED`, and a failing multi-agent check that names the project config. A separate error-path regression proves that a missing or non-directory project target exits 2 before readiness is computed.
 
@@ -54,14 +65,14 @@ The static doctor returned `STATIC_READY`: the Adaptive Effort skill, required S
 
 Historical installed-cache inspection found Adaptive Effort 0.1.0 and Superpowers 6.3.0. That older evidence proves the prior installation only; it is not 0.1.1 acceptance evidence.
 
-Historical 0.1.0 runtime smoke proved that the spawn/tool path completed with the requested settings. It does not independently observe or prove the child's model, effort, or context metadata. Historical fresh-task pickup also remains prior-release evidence. The 0.1.1 installed-cache inspection and fresh-task startup proof are post-push acceptance gates and must be reported in the release handoff. Repository validation does not substitute for either gate.
+Historical 0.1.0 runtime smoke proved that the spawn/tool path completed with the requested settings. It does not independently observe or prove the child's model, effort, or context metadata. Historical fresh-task pickup also remains prior-release evidence. The 0.1.2 installed-cache inspection and fresh-task startup proof are post-push acceptance gates and must be reported in the release handoff. Repository validation does not substitute for either gate.
 
 ## Not executed in this build environment
 
 - installation through a real `codex plugin marketplace add`
 - installation through a real `codex plugin add`
-- 0.1.1 installed-cache inspection
-- 0.1.1 fresh-task startup proof
+- 0.1.2 installed-cache inspection
+- 0.1.2 fresh-task startup proof
 - full authenticated implementation workflow beyond the exact smoke
 - IDE discovery, because Codex IDE extensions do not currently support plugins
 - token/latency comparison against an all-High workflow

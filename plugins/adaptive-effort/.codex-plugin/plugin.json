@@ -1,7 +1,7 @@
 {
   "name": "adaptive-effort",
-  "version": "0.1.1",
-  "description": "Evidence-driven Codex reasoning-effort routing for Superpowers implementation workflows.",
+  "version": "0.1.2",
+  "description": "Route Superpowers workers",
   "author": {
     "name": "darvilp",
     "url": "https://github.com/darvilp"
@@ -20,21 +20,23 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Adaptive Effort",
-    "shortDescription": "Route Superpowers workers across Codex reasoning levels",
-    "longDescription": "Keep the user-selected parent model and effort, run bounded implementation at lower effort, and escalate only after deterministic evidence warrants it.",
+    "shortDescription": "Route Superpowers workers",
+    "longDescription": "Adaptive Effort is a Codex compute-policy layer for approved Superpowers implementation plans. It preserves the parent model and effort, routes bounded workers to lower reasoning effort, and uses fresh medium or high agents only after classified evidence warrants debugging or recovery. Superpowers still owns planning, worker topology, TDD, reviews, and verification.",
     "developerName": "darvilp",
     "category": "Developer Tools",
     "capabilities": [
-      "Interactive",
-      "Read",
-      "Write"
+      "Route bounded implementation to low effort",
+      "Escalate failed repairs using evidence",
+      "Record compact routing and closeout traces"
     ],
     "defaultPrompt": [
-      "Implement this plan with Adaptive Effort.",
-      "Use balanced Adaptive Effort handling.",
-      "Check Adaptive Effort setup."
+      "Implement this approved Superpowers plan with balanced Adaptive Effort routing.",
+      "Implement this approved multi-file Superpowers plan with deep Adaptive Effort routing.",
+      "Check Adaptive Effort setup live."
     ],
     "websiteURL": "https://github.com/darvilp/adaptive-effort",
+    "privacyPolicyURL": "https://github.com/darvilp/adaptive-effort/blob/main/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/darvilp/adaptive-effort/blob/main/LICENSE",
     "brandColor": "#2563EB",
     "composerIcon": "./assets/adaptive-effort-small.svg",
     "logo": "./assets/adaptive-effort.svg"

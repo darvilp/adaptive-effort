@@ -12,7 +12,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE_DIRECTORIES = (".agents", ".github", "docs", "plugins", "scripts", "tests")
+PACKAGE_DIRECTORIES = (".agents", ".github", "docs", "plugins", "scripts", "submission", "tests")
 PACKAGE_ROOT_FILES = {
     ".gitignore",
     "CHANGELOG.md",
@@ -20,6 +20,7 @@ PACKAGE_ROOT_FILES = {
     "LICENSE",
     "Makefile",
     "MANIFEST.sha256",
+    "PRIVACY.md",
     "README.md",
     "SECURITY.md",
     "SOURCES.md",
@@ -74,16 +75,21 @@ def write_zip(output: Path) -> None:
             archive.writestr(info, path.read_bytes())
 
 
-def run_checks() -> int:
-    commands = [
-        [sys.executable, str(ROOT / "scripts" / "validate.py")],
-        [sys.executable, "-m", "unittest", "discover", "-s", str(ROOT / "tests"), "-v"],
-    ]
+def run_check_commands(commands: list[list[str]], cwd: Path = ROOT) -> int:
+    environment = os.environ.copy()
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
     for command in commands:
-        result = subprocess.run(command, cwd=ROOT, check=False)
+        result = subprocess.run(command, cwd=cwd, env=environment, check=False)
         if result.returncode:
             return result.returncode
     return 0
+
+
+def run_checks() -> int:
+    return run_check_commands([
+        [sys.executable, str(ROOT / "scripts" / "validate.py")],
+        [sys.executable, "-m", "unittest", "discover", "-s", str(ROOT / "tests"), "-v"],
+    ])
 
 
 def main() -> int:

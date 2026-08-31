@@ -55,6 +55,33 @@ class PolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             policy.route("balanced", "architect")
 
+    def test_failure_classes_select_the_canonical_corrective_route(self) -> None:
+        self.assertTrue(
+            hasattr(policy, "failure_route"),
+            "policy.py must own the failure-class to corrective-route mapping",
+        )
+        if not hasattr(policy, "failure_route"):
+            return
+        self.assertEqual(
+            policy.failure_route("local deterministic implementation defect"),
+            "semantic_correction",
+        )
+        self.assertEqual(
+            policy.failure_route("implementation-reasoning defect"),
+            "debugger",
+        )
+        self.assertEqual(
+            policy.failure_route("contract/design defect"),
+            "stop",
+        )
+        self.assertEqual(
+            policy.failure_route(
+                "contract/design defect",
+                independent_contract_design_evidence=True,
+            ),
+            "recovery",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

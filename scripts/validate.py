@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import json
 import re
+import runpy
+import shlex
 import sys
 from pathlib import Path
 
@@ -13,13 +15,15 @@ MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 PLUGIN = ROOT / "plugins" / "adaptive-effort"
 MANIFEST = PLUGIN / ".codex-plugin" / "plugin.json"
 SKILL = PLUGIN / "skills" / "adaptive-effort" / "SKILL.md"
-PUBLIC_DIRECTORIES = (".agents", ".github", "docs", "plugins", "scripts", "tests")
+POLICY_PATH = SKILL.parent / "scripts" / "policy.py"
+PUBLIC_DIRECTORIES = (".agents", ".github", "docs", "plugins", "scripts", "submission", "tests")
 PUBLIC_ROOT_FILES = {
     ".gitignore",
     "CHANGELOG.md",
     "DESIGN.md",
     "LICENSE",
     "Makefile",
+    "PRIVACY.md",
     "README.md",
     "SECURITY.md",
     "SOURCES.md",
@@ -29,10 +33,122 @@ PUBLIC_ROOT_FILES = {
 REPOSITORY_URL = "https://github.com/darvilp/adaptive-effort"
 AUTHOR_URL = "https://github.com/darvilp"
 PUBLISHER_PLACEHOLDER = "OWN" + "ER"
+SHORT_DESCRIPTION = "Route Superpowers workers"
+LONG_DESCRIPTION = "Adaptive Effort is a Codex compute-policy layer for approved Superpowers implementation plans. It preserves the parent model and effort, routes bounded workers to lower reasoning effort, and uses fresh medium or high agents only after classified evidence warrants debugging or recovery. Superpowers still owns planning, worker topology, TDD, reviews, and verification."
+CAPABILITIES = [
+    "Route bounded implementation to low effort",
+    "Escalate failed repairs using evidence",
+    "Record compact routing and closeout traces",
+]
+STARTER_PROMPTS = [
+    "Implement this approved Superpowers plan with balanced Adaptive Effort routing.",
+    "Implement this approved multi-file Superpowers plan with deep Adaptive Effort routing.",
+    "Check Adaptive Effort setup live.",
+]
+LISTING_URLS = {
+    "websiteURL": REPOSITORY_URL,
+    "supportURL": f"{REPOSITORY_URL}/issues",
+    "privacyPolicyURL": f"{REPOSITORY_URL}/blob/main/PRIVACY.md",
+    "termsOfServiceURL": f"{REPOSITORY_URL}/blob/main/LICENSE",
+}
+POLICY = runpy.run_path(str(POLICY_PATH))
+POLICY_ROUTE = POLICY["route"]
+FAILURE_ROUTE = POLICY["failure_route"]
+RECOVERY_QUALIFIER = "only with independent contract/design evidence"
+REVIEW_CASE_SEMANTICS = {
+    "balanced-bounded": {
+        "prompt": "Implement this approved bounded Superpowers plan with balanced Adaptive Effort routing.",
+        "expectedWorkflow": "Dispatch one fresh inherited-model Low implementer.",
+        "expectedResult": "A compact dispatch/result trace separates worker status from the downstream gate.",
+        "rationale": "Balanced routes bounded implementation to Low.",
+    },
+    "deep-integration": {
+        "prompt": "Implement this approved multi-file Superpowers plan with deep Adaptive Effort routing.",
+        "expectedWorkflow": "Dispatch a fresh inherited-model Medium implementer only after classifying the task as integration work.",
+        "expectedResult": "The compact trace records the Deep Medium integration route and the plan-owned boundary.",
+        "rationale": "Cross-file contract judgment, not diff size alone, justifies the integration route.",
+    },
+    "semantic-repair": {
+        "scenario": "After the Low implementer reports, run the checked-in local deterministic defect fixture once and return its exact classified output to the original worker.",
+        "expectedWorkflow": "Send one same-thread correction to the original worker at its original effort.",
+        "expectedResult": "One repair event cites the injected evidence, followed by separate worker and gate results.",
+        "rationale": "The deterministic correction uses the single semantic allowance without a fresh worker.",
+    },
+    "fresh-debugger": {
+        "scenario": "Only after the permitted same-thread correction reports and deterministic correction verification still fails, run the separate checked-in reasoning-defect fixture and classify that evidence as an implementation-reasoning defect.",
+        "expectedWorkflow": "Dispatch the single fresh mode-routed debugger.",
+        "expectedResult": "The trace records the separately classified reasoning-defect fingerprint and the corrective upward transition when effort increases.",
+        "rationale": "A separate implementation-reasoning defect established after correction failure warrants the one fresh debugger.",
+    },
+    "planned-review": {
+        "scenario": "Complete an approved bounded plan and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
+        "expectedWorkflow": "Use each review's planned effort without counting it as an escalation; correct and re-review any finding through the Superpowers workflow.",
+        "expectedResult": "Worker status remains separate from each downstream review gate and the escalation count is unchanged.",
+        "rationale": "Planned reviews are workflow gates, not corrective escalation.",
+    },
+    "pre-plan": {
+        "prompt": "Brainstorm and architect this feature.",
+        "expectedWorkflow": "Do not activate Adaptive Effort.",
+        "expectedResult": "Normal Superpowers design work occurs with no Adaptive Effort worker or routing trace.",
+        "safeFallback": "Finish design and obtain explicit plan approval before implementation.",
+    },
+    "missing-superpowers": {
+        "scenario": "Attempt an approved-plan implementation after confirming that the required Superpowers SKILL.md entrypoints are absent or disabled.",
+        "expectedWorkflow": "Stop before dispatch.",
+        "expectedResult": "A clear prerequisite failure names the missing Superpowers workflow skills and no Adaptive Effort worker runs.",
+        "safeFallback": "Install Superpowers from its public repository, verify its SKILL.md entrypoints, and start another new Codex task.",
+    },
+    "ladder-exhausted": {
+        "scenario": "Replay the same fixed public failure fingerprint after the permitted repair and debugger, or request recovery while withholding independent contract/design evidence.",
+        "expectedWorkflow": "Do not restart the ladder and do not dispatch recovery without independent evidence.",
+        "expectedResult": "A bounded stop report records consumed stages and the missing recovery evidence.",
+        "safeFallback": "Return to the user or planning for new evidence, changed scope, or authority.",
+    },
+}
+REVIEW_FAILURE_INJECTIONS = {
+    "semantic-repair": {
+        "command": "python3 scripts/review_case_fixture.py submission/fixtures/local-deterministic-defect.json",
+        "expectedExit": 1,
+        "expectedOutput": '{"actual":"medium","boundary":"bounded implementation route","classification":"local deterministic implementation defect","expected":"low","fingerprint":"review-fixture-local-v1","invariant":"Balanced bounded implementation uses Low effort"}',
+        "sequence": [
+            "Run the exact command after the original Low worker reports and the downstream gate detects expected Low but actual Medium.",
+            "Copy the single output line and exit code 1 into a same-thread correction sent to the original worker.",
+        ],
+    },
+    "fresh-debugger": {
+        "command": "python3 scripts/review_case_fixture.py submission/fixtures/implementation-reasoning-failure.json",
+        "expectedExit": 1,
+        "expectedOutput": '{"actual":"policy low; reviewer evidence medium after correction","boundary":"routing policy and reviewer contract","classification":"implementation-reasoning defect","expected":"low in both policy and reviewer evidence","fingerprint":"review-fixture-reasoning-v1","invariant":"Balanced bounded implementation uses Low effort across policy and reviewer evidence"}',
+        "sequence": [
+            "Complete the same-thread correction and rerun the exact deterministic verification.",
+            "Only if correction verification fails across the canonical policy and reviewer evidence, run the exact command above.",
+            "Copy the single output line and exit code 1 into the failure report, preserving the command, fingerprint, classification, boundary, invariant, expected value, and actual value.",
+        ],
+    },
+}
+REVIEW_FAILURE_ROUTES = {
+    "semantic-repair": "semantic_correction",
+    "fresh-debugger": "debugger",
+}
+REVIEW_SETUP_PREFIX = "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2."
+CURRENT_PLUGIN_URLS = {
+    "https://developers.openai.com/plugins",
+    "https://developers.openai.com/plugins/build/plugins",
+    "https://developers.openai.com/plugins/deploy/submission",
+}
 
 
 def fail(message: str) -> None:
     raise AssertionError(message)
+
+
+def is_numeric_test_pass_claim(sentence: str) -> bool:
+    signals = (
+        r"\b\d+\b",
+        r"\bpass(?:ed|es)?\b",
+        r"\btests?\b|\bunit\s+suite\b",
+    )
+    return all(re.search(signal, sentence, flags=re.IGNORECASE) for signal in signals)
 
 
 def load_json(path: Path) -> dict:
@@ -82,8 +198,10 @@ def validate() -> list[str]:
         fail(f"manifest missing fields: {sorted(missing)}")
     if manifest["name"] != PLUGIN.name:
         fail("manifest name must match plugin folder")
-    if manifest["version"] != "0.1.1":
-        fail("manifest version must be 0.1.1")
+    if manifest.get("description") != SHORT_DESCRIPTION:
+        fail("manifest description mismatch")
+    if manifest["version"] != "0.1.2":
+        fail("manifest version must be 0.1.2")
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?", manifest["version"]):
         fail("manifest version is not semver-like")
     if manifest["skills"] != "./skills/":
@@ -94,10 +212,25 @@ def validate() -> list[str]:
         if manifest.get(field) != REPOSITORY_URL:
             fail(f"manifest {field} URL mismatch")
     interface = manifest.get("interface", {})
+    if interface.get("displayName") != "Adaptive Effort":
+        fail("manifest display name mismatch")
     if interface.get("developerName") != "darvilp":
         fail("manifest developer name mismatch")
     if interface.get("websiteURL") != REPOSITORY_URL:
         fail("manifest website URL mismatch")
+    expected_interface = {
+        "shortDescription": SHORT_DESCRIPTION,
+        "longDescription": LONG_DESCRIPTION,
+        "privacyPolicyURL": f"{REPOSITORY_URL}/blob/main/PRIVACY.md",
+        "termsOfServiceURL": f"{REPOSITORY_URL}/blob/main/LICENSE",
+    }
+    for key, value in expected_interface.items():
+        if interface.get(key) != value:
+            fail(f"manifest {key} mismatch")
+    if interface.get("capabilities") != CAPABILITIES:
+        fail("manifest capabilities mismatch")
+    if interface.get("defaultPrompt") != STARTER_PROMPTS:
+        fail("manifest starter prompts mismatch")
     if "agents" in manifest:
         fail("current plugin schema does not support bundled custom agents")
     for path_key in ("composerIcon", "logo"):
@@ -147,7 +280,7 @@ def validate() -> list[str]:
     if not agent_manifest.exists():
         fail("missing skill agents/openai.yaml")
     agent_text = agent_manifest.read_text(encoding="utf-8")
-    for phrase in ("display_name:", "short_description:", "allow_implicit_invocation: true"):
+    for phrase in ("display_name:", "short_description:", "allow_implicit_invocation: true", "products: [CODEX]", "$adaptive-effort"):
         if phrase not in agent_text:
             fail(f"skill agent manifest missing: {phrase}")
 
@@ -156,6 +289,158 @@ def validate() -> list[str]:
         if not path.exists():
             fail(f"missing script: {script}")
         compile(path.read_text(encoding="utf-8"), str(path), "exec")
+
+    listing = load_json(ROOT / "submission/listing.json")
+    cases = load_json(ROOT / "submission/review-cases.json")
+    expected_listing = {
+        "name": "adaptive-effort", "version": "0.1.2", "displayName": "Adaptive Effort",
+        "shortDescription": SHORT_DESCRIPTION, "longDescription": LONG_DESCRIPTION,
+        "developerName": "darvilp", "category": "Developer Tools",
+        "capabilities": CAPABILITIES, "starterPrompts": STARTER_PROMPTS, **LISTING_URLS,
+    }
+    if listing != expected_listing:
+        fail("submission listing does not match the exact approved metadata")
+    if len(cases.get("positiveCases", [])) != 5 or len(cases.get("negativeCases", [])) != 3:
+        fail("review pack must contain exactly five positive and three negative cases")
+    prerequisite = cases.get("externalPrerequisite", {})
+    if prerequisite.get("name") != "Superpowers" or not all(
+        phrase in prerequisite.get("verification", "")
+        for phrase in ("github.com/obra/superpowers", "new Codex task", "SKILL.md")
+    ):
+        fail("review pack must provide concrete external Superpowers verification")
+    positive_ids = ["balanced-bounded", "deep-integration", "semantic-repair", "fresh-debugger", "planned-review"]
+    negative_ids = ["pre-plan", "missing-superpowers", "ladder-exhausted"]
+    if [case.get("id") for case in cases["positiveCases"]] != positive_ids or [case.get("id") for case in cases["negativeCases"]] != negative_ids:
+        fail("review case scenarios or order mismatch")
+    for kind, review_cases in (("positive", cases["positiveCases"]), ("negative", cases["negativeCases"])):
+        required_fields = {"id", "publicSetup", "expectedWorkflow", "expectedResult", "rationale" if kind == "positive" else "safeFallback"}
+        for case in review_cases:
+            if not ({"prompt", "scenario"} & case.keys()) or not required_fields <= case.keys():
+                fail(f"review {kind} case fields incomplete: {case.get('id')}")
+            setup = case.get("publicSetup", "")
+            if REPOSITORY_URL not in setup or "new Codex task" not in setup:
+                fail(f"review case is not publicly reproducible: {case.get('id')}")
+            if "tag 0.1.2" in setup.lower() or not setup.startswith(REVIEW_SETUP_PREFIX):
+                fail(f"review case public setup must use public main and manifest version: {case.get('id')}")
+            expected_semantics = REVIEW_CASE_SEMANTICS[case["id"]]
+            actual_semantics = {field: case.get(field) for field in expected_semantics}
+            if actual_semantics != expected_semantics:
+                fail(f"review case semantics mismatch: {case.get('id')}")
+    for case_id in ("semantic-repair", "fresh-debugger"):
+        case = next(case for case in cases["positiveCases"] if case["id"] == case_id)
+        injection = case.get("evidenceInjection", {})
+        expected_injection = REVIEW_FAILURE_INJECTIONS[case_id]
+        if injection != expected_injection:
+            fail(f"review case evidence injection mismatch: {case_id}")
+        fixture_path = ROOT / shlex.split(injection["command"])[-1]
+        fixture = load_json(fixture_path)
+        actual_route = FAILURE_ROUTE(fixture.get("classification"))
+        if actual_route != REVIEW_FAILURE_ROUTES[case_id]:
+            fail(f"review case canonical failure route mismatch: {case_id}")
+        serialized = json.dumps(fixture, sort_keys=True, separators=(",", ":"))
+        if serialized != injection["expectedOutput"]:
+            fail(f"review failure fixture output mismatch: {case_id}")
+    if FAILURE_ROUTE("contract/design defect") != "stop" or FAILURE_ROUTE(
+        "contract/design defect", independent_contract_design_evidence=True,
+    ) != "recovery":
+        fail("canonical recovery authorization rule mismatch")
+    portal = (ROOT / "submission/portal-checklist.md").read_text(encoding="utf-8")
+    for gate in ("Apps Management Write", "verified `darvilp` identity", "Skills only draft", "exact CI submission artifact", "successful skill scan", "attestations only after", "Submit for Review", "Publish manually", "new-task pickup", "live routing"):
+        if gate not in portal:
+            fail(f"portal checklist missing gate: {gate}")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    bundled_readme = (PLUGIN / "README.md").read_text(encoding="utf-8")
+    routing_policy = (SKILL.parent / "references/routing-policy.md").read_text(encoding="utf-8")
+    escalation_policy = (SKILL.parent / "references/escalation-policy.md").read_text(encoding="utf-8")
+    required_readme = [
+        "| Bounded implementation | Low | Low | Low |",
+        "| Integration implementation requiring real cross-file judgment | Low | Low | Medium |",
+        "| Fresh debugger | Medium | Medium | High |",
+        "Fast and Balanced currently choose the same effort for every defined route",
+        "Superpowers determines the plan tasks, execution boundaries, worker count, sequential versus parallel topology",
+        "Planned Medium or High reviewers are planned routes, not escalation events",
+    ]
+    for phrase in required_readme:
+        if phrase not in readme:
+            fail(f"README routing/topology agreement missing: {phrase}")
+    recovery_efforts = [
+        POLICY_ROUTE(mode, "recovery").reasoning_effort
+        for mode in ("fast", "balanced", "deep")
+    ]
+    if recovery_efforts != ["high", "high", "high"]:
+        fail("canonical recovery route effort mismatch")
+    root_recovery_row = "| Recovery diagnostician | " + " | ".join(
+        f"{effort.title()}, {RECOVERY_QUALIFIER}" for effort in recovery_efforts
+    ) + " |"
+    policy_recovery_row = "| Recovery diagnostician | " + " | ".join(
+        f"{effort}, {RECOVERY_QUALIFIER}" for effort in recovery_efforts
+    ) + " |"
+    if root_recovery_row not in readme:
+        fail("README recovery authorization disagrees with canonical policy")
+    if root_recovery_row not in bundled_readme:
+        fail("bundled README recovery authorization disagrees with canonical policy")
+    if policy_recovery_row not in routing_policy:
+        fail("routing policy recovery authorization disagrees with canonical policy")
+    authorization_rule = "Only the recovery diagnostician requires contract/design evidence"
+    if authorization_rule not in escalation_policy:
+        fail("recovery authorization rule disagrees with canonical policy")
+
+    documentation_paths = [
+        ROOT / "README.md",
+        ROOT / "DESIGN.md",
+        ROOT / "docs/design.md",
+        ROOT / "SOURCES.md",
+        PLUGIN / "README.md",
+        SKILL.parent / "references/compatibility.md",
+    ]
+    documentation = "\n".join(path.read_text(encoding="utf-8") for path in documentation_paths)
+    for stale in (
+        "community-marketplace",
+        "community marketplace",
+        "Git-hosted community marketplace",
+        "https://developers.openai.com/codex/plugins",
+        "https://developers.openai.com/codex/build-plugins",
+        "https://developers.openai.com/plugins/submit/",
+    ):
+        if stale.lower() in documentation.lower():
+            fail(f"distribution documentation contains stale terminology or URL: {stale}")
+    sources = (ROOT / "SOURCES.md").read_text(encoding="utf-8")
+    compatibility = (SKILL.parent / "references/compatibility.md").read_text(encoding="utf-8")
+    for current_url in CURRENT_PLUGIN_URLS:
+        if current_url not in sources or current_url not in compatibility:
+            fail(f"distribution documentation missing current URL: {current_url}")
+    test_results = (ROOT / "TEST_RESULTS.md").read_text(encoding="utf-8")
+    for phrase in (
+        "Fresh local verification for this commit:",
+        "CI is configured to run",
+        "No CI result is claimed for this unpushed commit.",
+    ):
+        if phrase not in test_results:
+            fail(f"CI evidence documentation missing: {phrase}")
+    if "repository verification is recorded in the release implementation report and CI" in test_results:
+        fail("CI evidence documentation claims an unrun CI result")
+    verification_marker = "Fresh local verification for this commit:"
+    current_verification = test_results.split(verification_marker, 1)[1].lstrip("\n").split("\n\n", 1)[0]
+    unit_suite_evidence = "`scripts/validate.py` passed, and the full unit suite passed."
+    if unit_suite_evidence not in current_verification:
+        fail("TEST_RESULTS unit-suite evidence is missing or stale")
+    current_verification_sentences = re.split(r"(?<=[.!?])(?:\s+|$)", current_verification)
+    if any(is_numeric_test_pass_claim(sentence) for sentence in current_verification_sentences):
+        fail("TEST_RESULTS unit-suite evidence uses a brittle numeric count")
+    policy_evidence = (
+        "`plugins/adaptive-effort/skills/adaptive-effort/scripts/doctor.py` and the existing "
+        "`route()` effort behavior and matrix are unchanged. "
+        "`plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py` now adds the canonical "
+        "failure-class-to-corrective-route mapping without changing the approved effort matrix."
+    )
+    if policy_evidence not in test_results:
+        fail("TEST_RESULTS policy evidence is missing or false")
+    if "`scripts/policy.py` and `doctor.py` are unchanged." in test_results:
+        fail("TEST_RESULTS policy evidence falsely claims policy.py is unchanged")
+    forbidden_names = {"apps", "mcp", "screenshots", "hooks"}
+    forbidden_paths = [path for path in PLUGIN.rglob("*") if path.name.lower() in forbidden_names or path.suffix == ".toml" or path.is_symlink()]
+    if forbidden_paths:
+        fail(f"plugin contains forbidden submission surfaces: {forbidden_paths}")
 
     owner_paths = [
         path.relative_to(ROOT).as_posix()
@@ -171,6 +456,7 @@ def validate() -> list[str]:
     notes.append("skill agent metadata valid")
     notes.append("scripts compile")
     notes.append("public metadata valid")
+    notes.append("submission reviewer pack valid")
     return notes
 
 

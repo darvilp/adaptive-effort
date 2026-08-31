@@ -3,6 +3,13 @@
 ## Unreleased
 
 
+## 0.1.2 — 2026-08-30
+
+- Prepared the skills-only plugin and reviewer pack for Universal Plugins Directory submission.
+- Added deterministic, plugin-only submission packaging alongside the source archive.
+- Documented the exact routing modes, Superpowers ownership boundary, privacy posture, and conditional directory installation flow.
+- Preserved all 0.1.1 routing behavior.
+
 ## 0.1.1 — 2026-08-29
 
 - Clarified the ownership split between Superpowers workflow decisions and Adaptive Effort routing decisions.

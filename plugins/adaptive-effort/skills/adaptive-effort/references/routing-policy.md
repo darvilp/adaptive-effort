@@ -17,7 +17,7 @@
 | Multi-file integration implementer | low | low | medium |
 | Same-thread local repair | low, once | low, once | same effort as implementer, once |
 | Fresh debugger | medium | medium | high |
-| Recovery diagnostician | high only for design evidence | high | high |
+| Recovery diagnostician | high, only with independent contract/design evidence | high, only with independent contract/design evidence | high, only with independent contract/design evidence |
 | Routine spec review | medium | medium | high |
 | Routine quality review | medium | medium | high |
 | High-risk review | high | high | high |

@@ -1,0 +1,8 @@
+{
+  "fingerprint": "review-fixture-reasoning-v1",
+  "classification": "implementation-reasoning defect",
+  "boundary": "routing policy and reviewer contract",
+  "invariant": "Balanced bounded implementation uses Low effort across policy and reviewer evidence",
+  "expected": "low in both policy and reviewer evidence",
+  "actual": "policy low; reviewer evidence medium after correction"
+}

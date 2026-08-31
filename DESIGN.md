@@ -25,7 +25,7 @@ The plugin is skills-only because the current Codex plugin manifest does not ins
 
 ## Distribution
 
-The Git repository is itself a Codex marketplace through `.agents/plugins/marketplace.json`. The plugin lives under `plugins/adaptive-effort`.
+The plugin is prepared for the Universal Plugins Directory. The Git repository is also a Git marketplace through `.agents/plugins/marketplace.json`, and the plugin lives under `plugins/adaptive-effort`.
 
 ## Success measure
 

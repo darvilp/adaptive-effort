@@ -15,7 +15,7 @@ Snapshot date: 2026-08-28
 
 ## Supported distribution surface
 
-The package is a native skills-only Codex plugin and community marketplace.
+The package is a native skills-only Codex plugin prepared for the Universal Plugins Directory. The repository also provides a Git marketplace.
 
 The Codex app and CLI support plugins. Codex IDE extensions do not currently support plugins. Use the Codex app or CLI for Adaptive Effort.
 
@@ -46,9 +46,10 @@ Unknown Superpowers versions may run when required skills are present, but diagn
 
 ## Snapshot sources
 
-- OpenAI Plugins overview: https://developers.openai.com/codex/plugins
+- OpenAI Plugins overview: https://developers.openai.com/plugins
 - OpenAI Codex changelog, March 25, 2026 plugin entry: https://developers.openai.com/codex/changelog
-- OpenAI Build plugins: https://developers.openai.com/codex/build-plugins
+- OpenAI Build plugins: https://developers.openai.com/plugins/build/plugins
+- OpenAI Submit plugins: https://developers.openai.com/plugins/deploy/submission
 - OpenAI Codex developer commands: https://developers.openai.com/codex/developer-commands
 - OpenAI Codex source, multi-agent spawn specification: https://github.com/openai/codex/blob/main/codex-rs/core/src/tools/handlers/multi_agents_spec.rs
 - OpenAI-curated Superpowers plugin: https://github.com/openai/plugins/tree/main/plugins/superpowers

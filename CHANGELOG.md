@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Differentiated the task-local modes: Fast now uses Low routine reviews and stops before automatic High recovery, while Balanced retains Medium routine reviews and evidence-gated recovery.
+- Made Deep start every implementation and same-thread repair at Medium, with High debugging and routine reviews.
+- Removed the upfront implementation work-category decision from policy, guidance, reviewer cases, and public documentation.
 
 ## 0.1.2 — 2026-08-30
 

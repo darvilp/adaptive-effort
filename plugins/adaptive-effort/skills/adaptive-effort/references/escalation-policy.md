@@ -42,7 +42,7 @@ Action: use the one semantic same-thread correction allowed across pre-review ve
 
 ### Mechanical correction
 
-A formatting, generated-file, checksum, or other deterministic hygiene failure may receive one deterministic same-thread mechanical correction per implementation task. This does not consume the semantic low-repair allowance. Target the thread that produced the current diff being checked, whether the original implementer, debugger, or explicitly authorized recovery writer. The follow-up must name exact targets and transformation, compare against the last semantically accepted diff, include a semantic-equivalence command and result, and rerun the failed hygiene gate. Independent review is not required before that comparison point.
+A formatting, generated-file, checksum, or other deterministic hygiene failure may receive one deterministic same-thread mechanical correction per implementation task. This does not consume the semantic repair allowance. Target the thread that produced the current diff being checked, whether the original implementer, debugger, or explicitly authorized recovery writer. The follow-up must name exact targets and transformation, compare against the last semantically accepted diff, include a semantic-equivalence command and result, and rerun the failed hygiene gate. Independent review is not required before that comparison point.
 
 A second mechanical correction stops automatic handling without raising effort. Report the remaining gate failure to the parent.
 
@@ -69,7 +69,7 @@ Examples:
 - no local patch can satisfy all acceptance criteria
 - the debugger concludes the plan is wrong
 
-Action: start one high-effort recovery diagnostician. Its first task is to decide whether a bounded repair is safe or planning must resume.
+Action: stop automatic handling in Fast. In Balanced or Deep, start one high-effort recovery diagnostician. Its first task is to decide whether a bounded repair is safe or planning must resume.
 
 ## Circuit breaker
 
@@ -82,11 +82,11 @@ Default per implementation task:
 | Same-thread local repair, the semantic correction | 1 across verification and all review stages |
 | Same-thread mechanical correction | 1, separate from semantic repair |
 | Fresh debugger | 1 |
-| High recovery diagnostician | 1 |
+| High recovery diagnostician | 0 in Fast; 1 in Balanced/Deep |
 
-Reviews remain governed by Superpowers, but Adaptive Effort must not turn review findings into an unbounded fix/re-review loop. The one semantic same-thread correction covers pre-review verification and all Superpowers review stages; a local review correction consumes it. If the allowance is already consumed, classify the failure. For an implementation reasoning defect, use the single fresh debugger stage only if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that debugger stage was already consumed, stop automatic handling and report the failed review gate unless contract/design evidence justifies the still-unused single recovery diagnostician. Only the recovery diagnostician requires contract/design evidence. High effort alone does not make a debugger a recovery, because Deep routes its debugger at High. Keep the required review gate, and never repeat the debugger or restart the ladder.
+Reviews remain governed by Superpowers, but Adaptive Effort must not turn review findings into an unbounded fix/re-review loop. The one semantic same-thread correction covers pre-review verification and all Superpowers review stages; a local review correction consumes it. If the allowance is already consumed, classify the failure. For an implementation reasoning defect, use the single fresh debugger stage only if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that debugger stage was already consumed, Fast stops automatic handling and reports the failed review gate. Balanced and Deep may use the still-unused single recovery diagnostician only when independent contract/design evidence justifies it. Only the recovery diagnostician requires contract/design evidence. High effort alone does not make a debugger a recovery, because Deep routes its debugger at High. Keep the required review gate, and never repeat the debugger or restart the ladder.
 
-A Deep debugger-to-recovery transition dispatches the recovery role without an `escalate` event or escalation-count increment. Both roles use High effort in Deep, so recovery changes the role and fresh context but does not make a corrective upward effort transition.
+A Deep debugger-to-recovery transition dispatches the recovery role without an `escalate` event or escalation-count increment. Both roles use High effort in Deep, so recovery changes the role and fresh context but does not make a corrective upward effort transition. Fast has no automatic recovery transition.
 
 ## Stop report
 
@@ -118,7 +118,7 @@ Never silently restart the ladder.
 
 ## Counting example
 
-This Balanced-mode example has separate design evidence. The approved contract requires one bounded implementation to pass effective project configuration to `inspect` through both the API and CLI entry points. The debugger result and deterministic gate evidence establish that the settled shared-propagation assumption is false and that no local patch within the approved scope can satisfy both acceptance criteria. Classify that contradiction as design. The repeated fingerprint establishes material similarity only; it does not authorize recovery. The Medium-to-High transition enters the still-unused single High recovery diagnostician.
+This Balanced-mode example has separate design evidence. The approved contract requires the implementation to pass effective project configuration to `inspect` through both the API and CLI entry points. The debugger result and deterministic gate evidence establish that the settled shared-propagation assumption is false and that no local patch within the approved scope can satisfy both acceptance criteria. Classify that contradiction as design. The repeated fingerprint establishes material similarity only; it does not authorize recovery. The Medium-to-High transition enters the still-unused single High recovery diagnostician.
 
 The planned High review below is not an escalation. The two corrective upward transitions are:
 

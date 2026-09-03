@@ -13,7 +13,7 @@ from dataclasses import asdict, dataclass
 from typing import Literal
 
 Mode = Literal["fast", "balanced", "deep"]
-Role = Literal["implementer", "integration_implementer", "debugger", "recovery", "reviewer"]
+Role = Literal["implementer", "debugger", "recovery", "reviewer"]
 Risk = Literal["routine", "high"]
 FailureClass = Literal[
     "environment failure",
@@ -46,7 +46,6 @@ def route(mode: Mode, role: Role, risk: Risk = "routine") -> Route:
         raise ValueError(f"unsupported mode: {mode}")
     if role not in {
         "implementer",
-        "integration_implementer",
         "debugger",
         "recovery",
         "reviewer",
@@ -56,15 +55,18 @@ def route(mode: Mode, role: Role, risk: Risk = "routine") -> Route:
         raise ValueError(f"unsupported risk: {risk}")
 
     if role == "implementer":
-        effort = "low"
-    elif role == "integration_implementer":
         effort = "medium" if mode == "deep" else "low"
     elif role == "debugger":
         effort = "high" if mode == "deep" else "medium"
     elif role == "recovery":
         effort = "high"
     else:  # reviewer
-        effort = "high" if mode == "deep" or risk == "high" else "medium"
+        if risk == "high" or mode == "deep":
+            effort = "high"
+        elif mode == "fast":
+            effort = "low"
+        else:
+            effort = "medium"
 
     return Route(
         mode=mode,
@@ -76,9 +78,12 @@ def route(mode: Mode, role: Role, risk: Risk = "routine") -> Route:
 def failure_route(
     classification: FailureClass,
     *,
+    mode: Mode = "balanced",
     independent_contract_design_evidence: bool = False,
 ) -> CorrectiveRoute:
     """Map a classified failure to the next policy route."""
+    if mode not in {"fast", "balanced", "deep"}:
+        raise ValueError(f"unsupported mode: {mode}")
     if classification == "environment failure":
         return "report"
     if classification == "missing-context failure":
@@ -88,6 +93,8 @@ def failure_route(
     if classification == "implementation-reasoning defect":
         return "debugger"
     if classification == "contract/design defect":
+        if mode == "fast":
+            return "stop"
         return "recovery" if independent_contract_design_evidence else "stop"
     raise ValueError(f"unsupported failure classification: {classification}")
 
@@ -99,7 +106,6 @@ def main() -> int:
         "--role",
         choices=[
             "implementer",
-            "integration_implementer",
             "debugger",
             "recovery",
             "reviewer",

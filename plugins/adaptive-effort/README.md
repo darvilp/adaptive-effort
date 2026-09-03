@@ -18,16 +18,16 @@ Superpowers remains responsible for planning, TDD, reviews, and verification.
 
 | Route | Fast | Balanced | Deep |
 |---|---:|---:|---:|
-| Bounded implementation | Low | Low | Low |
-| Genuine integration implementation | Low | Low | Medium |
+| Implementation | Low | Low | Medium |
 | Same-thread repair | Retains effort, once | Retains effort, once | Retains effort, once |
-| Fresh debugger and routine reviews | Medium | Medium | High |
+| Fresh debugger | Medium | Medium | High |
+| Routine spec and quality reviews | Low | Medium | High |
 | High-risk review | High | High | High |
-| Recovery diagnostician | High, only with independent contract/design evidence | High, only with independent contract/design evidence | High, only with independent contract/design evidence |
+| Recovery diagnostician | High only when explicitly requested; not automatic | High, only with independent contract/design evidence | High, only with independent contract/design evidence |
 
-Balanced is the default; Fast currently has the same defined routes and never weakens reviews or gates. Deep raises only genuine integration work, debugging, and routine reviews. Planned reviewers are not escalation events. Adaptive Effort never automatically chooses `xhigh`, `max`, or `ultra`.
+Balanced is the default. Fast uses Low for implementation and routine reviews, Medium for debugging, and stops automatic handling before High recovery. Balanced uses Low implementation, Medium routine reviews and debugging, and evidence-gated High recovery. Deep always starts implementation at Medium and routes debugging and routine reviews at High. No upfront work classification is required. Required reviews still run, and high-risk review remains High in every mode. Planned reviewers are not escalation events. Adaptive Effort never automatically chooses `xhigh`, `max`, or `ultra`.
 
-Superpowers coordinates the approved plan, chooses tasks, boundaries, worker count and topology, and requires TDD. A fresh implementer handles each bounded task. Superpowers runs specification review before code-quality review; findings are corrected and re-reviewed before final verification. Adaptive Effort changes child effort and handoffs, classifies failures, and bounds correction and escalation. Worker count and aggregate usage are optional AAR observations, not routing inputs or per-agent accounting promises.
+Superpowers coordinates the approved plan, chooses tasks, boundaries, worker count and topology, and requires TDD. A fresh implementer handles each approved task. Superpowers runs specification review before code-quality review; findings are corrected and re-reviewed before final verification. Adaptive Effort changes child effort and handoffs, classifies failures, and bounds correction and escalation. Worker count and aggregate usage are optional AAR observations, not routing inputs or per-agent accounting promises.
 
 Superpowers also chooses task boundaries, writer topology, parallelism, and acceptance gates. Adaptive Effort carries those choices into compact child handoffs, classifies failures, counts only corrective upward effort transitions, and records a compact closeout. Planned higher-effort reviews are not escalations.
 

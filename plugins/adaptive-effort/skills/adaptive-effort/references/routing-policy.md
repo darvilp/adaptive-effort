@@ -13,16 +13,17 @@
 
 | Role | Fast | Balanced | Deep |
 |---|---|---|---|
-| Bounded implementer | low | low | low |
-| Multi-file integration implementer | low | low | medium |
+| Implementer | low | low | medium |
 | Same-thread local repair | low, once | low, once | same effort as implementer, once |
 | Fresh debugger | medium | medium | high |
-| Recovery diagnostician | high, only with independent contract/design evidence | high, only with independent contract/design evidence | high, only with independent contract/design evidence |
-| Routine spec review | medium | medium | high |
-| Routine quality review | medium | medium | high |
+| Recovery diagnostician | high only when explicitly requested; not automatic | high, only with independent contract/design evidence | high, only with independent contract/design evidence |
+| Routine spec review | low | medium | high |
+| Routine quality review | low | medium | high |
 | High-risk review | high | high | high |
 
-Deep mode raises implementation to medium only when the task requires real integration judgment. A large line count by itself is not sufficient.
+Deep always starts implementation at medium. Adaptive Effort assigns no implementation work category before dispatch.
+
+Fast stops before automatic High recovery. An explicit user instruction may request a High recovery role; otherwise return to the user or planning after the debugger. Balanced and Deep retain evidence-gated automatic recovery.
 
 The repair row is not a spawn route. It is one `followup_task` on the existing implementer thread, so it retains that thread's original Low or Medium effort.
 
@@ -49,7 +50,7 @@ Adaptive Effort records a dispatch purpose as `implementation`, `planned-review`
 
 ```text
 model: omit
-reasoning_effort: low (or medium for deep integration work)
+reasoning_effort: low in fast/balanced; medium in deep
 fork_turns: none
 ```
 
@@ -71,7 +72,7 @@ fork_turns: none
 
 ### Reviewer
 
-Use the role selected by Superpowers. Omit the model, choose medium or high effort from the matrix, and prefer a fresh handoff.
+Use the role selected by Superpowers. Omit the model, choose low, medium, or high effort from the matrix, and prefer a fresh handoff.
 
 ## Task-local caps
 

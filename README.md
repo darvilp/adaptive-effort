@@ -2,7 +2,7 @@
 
 Adaptive Effort is a Codex plugin prepared for the Universal Plugins Directory, with a Git marketplace fallback for repository-backed installation.
 
-The user-selected parent model and effort stay untouched. Routine implementation starts at low effort, deterministic failures get one cheap repair, and fresh higher-effort agents are used only when evidence warrants them.
+The user-selected parent model and effort stay untouched. Implementation starts at Low in Fast and Balanced and at Medium in Deep. Deterministic failures get one same-effort repair, and fresh higher-effort agents are used only when the selected mode and evidence warrant them.
 
 ## What it changes
 
@@ -12,7 +12,7 @@ Superpowers
 
 Adaptive Effort
   parent unchanged
-  implementation: low
+  implementation: low in fast/balanced; medium in deep
   local repair: same thread, once; retains its effort
   debugger: mode-routed; medium in fast/balanced, high in deep
   recovery diagnosis: high
@@ -28,16 +28,15 @@ Fast, Balanced, and Deep are task-local Adaptive Effort routing profiles. They d
 
 | Work being routed | Fast | Balanced | Deep |
 |---|---:|---:|---:|
-| Bounded implementation | Low | Low | Low |
-| Integration implementation requiring real cross-file judgment | Low | Low | Medium |
+| Implementation | Low | Low | Medium |
 | Same-thread semantic repair | Retains worker effort, once | Retains worker effort, once | Retains worker effort, once |
 | Fresh debugger | Medium | Medium | High |
-| Routine spec review | Medium | Medium | High |
-| Routine code-quality review | Medium | Medium | High |
+| Routine spec review | Low | Medium | High |
+| Routine code-quality review | Low | Medium | High |
 | High-risk review | High | High | High |
-| Recovery diagnostician | High, only with independent contract/design evidence | High, only with independent contract/design evidence | High, only with independent contract/design evidence |
+| Recovery diagnostician | High only when explicitly requested; not automatic | High, only with independent contract/design evidence | High, only with independent contract/design evidence |
 
-Balanced is the default. Fast and Balanced currently choose the same effort for every defined route. Fast does not skip reviews, reduce acceptance gates, or permit weaker evidence. Deep leaves ordinary bounded implementation at Low. It raises only genuine integration implementation to Medium and routes debugging and routine reviews at High. A large diff alone does not make work an integration task.
+Balanced is the default. Fast minimizes routine worker cost: implementation and routine reviews use Low, debugging uses Medium, and automatic handling stops before High recovery. Balanced keeps Low implementation, Medium routine reviews and debugging, and evidence-gated High recovery. Deep always starts implementation at Medium and routes debugging and routine reviews at High. The mode alone selects implementation effort; no upfront work category is required. Fast does not skip reviews or reduce acceptance gates, and high-risk review remains High in every mode.
 
 A same-thread repair is not a new worker and retains the implementer's original effort. The separate one-shot mechanical correction also retains the current writer's effort and does not count as a reasoning escalation. Planned Medium or High reviewers are planned routes, not escalation events. Only corrective movement to a higher effort after a classified failure increments the escalation count. Adaptive Effort never automatically chooses `xhigh`, `max`, or `ultra`.
 
@@ -45,7 +44,7 @@ A same-thread repair is not a new worker and retains the implementer's original 
 
 1. The parent task coordinates the approved plan.
 2. Superpowers determines the plan tasks, execution boundaries, worker count, sequential versus parallel topology, and TDD requirements.
-3. A fresh implementer handles a bounded plan task.
+3. A fresh implementer handles an approved plan task at the selected mode's effort.
 4. Superpowers runs specification review before code-quality review.
 5. Review findings are corrected and re-reviewed.
 6. Final verification uses fresh evidence before completion.

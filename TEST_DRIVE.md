@@ -30,7 +30,7 @@ Request one inherited-model, low-effort, fresh-context child. Confirm it returns
 
 ## 1b. Implicit activation gate
 
-In three fresh tasks, use representative Superpowers implementation prompts without naming Adaptive Effort. Include a bounded single-module task, a multi-file integration task, and an approved-plan continuation.
+In three fresh tasks, use representative Superpowers implementation prompts without naming Adaptive Effort. Include a small single-module task, a multi-file task, and an approved-plan continuation.
 
 Confirm each run emits exactly one initial trace:
 
@@ -43,12 +43,14 @@ Also confirm Adaptive Effort does not activate for:
 - brainstorming or architecture before implementation approval
 - generic delegation outside a Superpowers workflow
 
-## 2. Straight-through bounded task
+Confirm each mode selects its initial implementation effort directly, without assigning a work category first.
+
+## 2. Straight-through Balanced task
 
 Choose a small repository task with an existing test runner:
 
 ```text
-Add a bounded retry option to this client. Preserve the public API defaults.
+Add a retry option to this client. Preserve the public API defaults.
 Cover eventual success and exhausted retries. Implement the approved plan.
 ```
 
@@ -70,7 +72,13 @@ Confirm:
 - Superpowers reviews still ran
 - closeout reports `escalations=0`
 
-## 2b. Planned high review
+## 2b. Mode differentiation
+
+Repeat a routine task in Fast. Confirm implementation and routine spec and quality reviews use Low, a debugger uses Medium if needed, and automatic handling stops before High recovery even when contract/design evidence is present. Confirm required reviews still run and a high-risk review still uses High.
+
+Repeat a simple task in Deep. Confirm the implementer starts at Medium, its same-thread repair retains Medium, and routine reviews and debugging use High. Confirm no work category is assigned before dispatch.
+
+## 2c. Planned high review
 
 Use a Superpowers-selected high-risk review after straight-through implementation. Confirm the review dispatch uses `purpose=planned-review` and the closeout still reports zero escalations. A planned High route is not a corrective transition.
 
@@ -128,11 +136,11 @@ Mark another Superpowers-defined boundary deferred. Confirm its result remains `
 
 ## 4e. Review correction accounting
 
-Use the semantic same-thread correction during pre-review verification, then introduce a local finding at a required Superpowers review. In Fast or Balanced, confirm the implementation reasoning defect uses the single fresh debugger at Medium when that stage remains unused. Repeat in Deep and confirm the same debugger role runs at High without becoming recovery. The visible trace must report `role=debugger`, the actual route, and the mode. Then reproduce the review failure after the debugger stage has already been consumed. Confirm automatic handling stops and reports the failed review gate unless contract or design evidence justifies the still-unused recovery diagnostician. When Deep enters recovery, confirm it emits a separate High recovery dispatch without a High-to-High `escalate` event or escalation-count increment. Confirm the stop report lists debugger and recovery separately, the debugger never repeats, and the ladder never restarts.
+Use the semantic same-thread correction during pre-review verification, then introduce a local finding at a required Superpowers review. In Fast or Balanced, confirm the implementation reasoning defect uses the single fresh debugger at Medium when that stage remains unused. Repeat in Deep and confirm the same debugger role runs at High without becoming recovery. The visible trace must report `role=debugger`, the actual route, and the mode. Then reproduce the review failure after the debugger stage has already been consumed. Confirm Fast stops automatic handling and reports the failed review gate. Confirm Balanced or Deep enters recovery only when independent contract/design evidence justifies it. When Deep enters recovery, confirm it emits a separate High recovery dispatch without a High-to-High `escalate` event or escalation-count increment. Confirm the stop report lists debugger and recovery separately, the debugger never repeats, and the ladder never restarts.
 
 ## 5. Design conflict
 
-Use mutually incompatible acceptance criteria in a disposable test repository.
+Use Balanced mode with mutually incompatible acceptance criteria in a disposable test repository.
 
 Expected:
 

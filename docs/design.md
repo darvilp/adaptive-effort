@@ -29,10 +29,10 @@ Medium / High / user-selected
 Superpowers design + planning
         │
         ▼
-bounded implementation contract
+approved implementation contract
         │
         ▼
-Low implementation
+mode-routed implementation
         │
    deterministic verification
         │
@@ -85,7 +85,7 @@ Adaptive Effort should:
 1. Preserve normal Superpowers behavior.
 2. Require little or no manual agent invocation.
 3. Respect the model and effort selected for the active Codex parent session.
-4. Use lower reasoning effort for bounded implementation by default.
+4. Route implementation effort directly from the selected mode.
 5. Increase reasoning effort only when verification evidence justifies it.
 6. Avoid copying large parent conversations into worker contexts.
 7. Prevent unbounded repair, review, or escalation loops.
@@ -371,7 +371,7 @@ Manual `$adaptive-effort` invocation may exist for explicit use or diagnostics, 
 
 Purpose:
 
-- execute one bounded implementation task
+- execute one approved implementation task
 - follow the approved plan and task contract
 - satisfy the tests and acceptance criteria supplied by Superpowers
 - make the smallest appropriate change
@@ -380,7 +380,7 @@ Configuration:
 
 ```text
 model:             inherit
-reasoning effort:  Low
+reasoning effort:  Low in Fast/Balanced; Medium in Deep
 context:           fresh / compact
 write access:      yes
 ```
@@ -402,7 +402,7 @@ Configuration:
 
 ```text
 model:             inherit
-reasoning effort:  Medium
+reasoning effort:  Medium in Fast/Balanced; High in Deep
 context:           fresh / compact
 write access:      yes
 ```
@@ -452,7 +452,9 @@ Superpowers owns review timing and review requirements.
 Adaptive Effort may supply reasoning-effort policy for reviewers:
 
 ```text
-routine implementation review   Medium
+Fast routine review             Low
+Balanced routine review         Medium
+Deep routine review             High
 high-risk review                 High
 architectural challenge          High
 ```
@@ -524,7 +526,7 @@ Parent with large architecture context
         │
         └── compact contract
                  ↓
-          Low implementer
+          Mode-routed implementer
                  │
                  └── diff + failures
                            ↓
@@ -544,14 +546,16 @@ Fresh context provides both token savings and an independent reasoning path.
 SUPERPOWERS TASK READY
           │
           ▼
-    LOW IMPLEMENTER
+    IMPLEMENTER
+ LOW FAST/BALANCED
+     MEDIUM DEEP
           │
       verification
        /        \
     PASS        FAIL
      │            │
      ▼            ▼
-continue      LOW REPAIR
+continue   SAME-EFFORT REPAIR
 workflow          │
               verification
                /       \
@@ -567,9 +571,10 @@ workflow          │
                     PASS       FAIL
                      │           │
                      ▼           ▼
-                  continue     HIGH
-                            DIAGNOSTIC
-                              RECOVERY
+                  continue   FAST: STOP
+                             BALANCED/DEEP:
+                             EVIDENCE-GATED
+                             HIGH RECOVERY
                                 │
                     ┌───────────┴───────────┐
                     ▼                       ▼
@@ -604,7 +609,7 @@ Observed 4 attempts.
 Correct the implementation while preserving the approved contract.
 ```
 
-If the correction still fails, or a later local review finding occurs after the allowance is consumed, classify the failure. An implementation reasoning defect uses the one debugger stage if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that stage was already consumed, automatic handling stops and reports the failed review gate unless contract or design evidence justifies the still-unused recovery diagnostician. A Deep debugger is High because of its mode, not because it is recovery. Required reviews still run, and the ladder never repeats or restarts.
+If the correction still fails, or a later local review finding occurs after the allowance is consumed, classify the failure. An implementation reasoning defect uses the one debugger stage if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that stage was already consumed, Fast stops automatic handling and reports the failed review gate. Balanced and Deep may use the still-unused recovery diagnostician only when independent contract/design evidence justifies it. A Deep debugger is High because of its mode, not because it is recovery. Required reviews still run, and the ladder never repeats or restarts.
 
 A deterministic hygiene failure may receive one separate same-thread mechanical correction on the thread that produced the current diff. It requires exact targets and transformation, comparison against the last semantically accepted diff, a semantic-equivalence command and result, and a rerun of the failed hygiene gate. A second mechanical correction stops automatic handling without raising effort.
 
@@ -618,13 +623,13 @@ A worker may receive one bundled same-thread context continuation per dispatch. 
 
 Use the one mode-routed debugger stage when:
 
-- the Low repair fails
+- the same-effort repair fails
 - the failure involves non-obvious interactions
 - tests conflict unexpectedly
 - repository behavior differs from implementation assumptions
 - broader control-flow or data-flow analysis is required
 
-In Fast and Balanced, moving from a Low worker to the Medium debugger is one corrective upward effort transition. Deep routes the debugger at High.
+In Fast and Balanced, moving from a Low worker to the Medium debugger is one corrective upward effort transition. Deep moves from a Medium implementer to a High debugger.
 
 ### Debugger to recovery
 
@@ -636,7 +641,7 @@ Enter recovery only when independent contract or design evidence shows one of th
 - testing exposes an unstated invariant
 - the debugger determines that the plan itself may be wrong
 
-Repeated verification failure or a repeated fingerprint alone does not authorize recovery. In Fast and Balanced, the Medium debugger to High recovery move is a counted upward effort transition. In Deep, dispatch the separate High recovery role without an `escalate` event or count increase because the debugger already ran at High.
+Repeated verification failure or a repeated fingerprint alone does not authorize recovery. Fast stops before automatic High recovery. In Balanced, the Medium debugger to High recovery move is a counted upward effort transition. In Deep, dispatch the separate High recovery role without an `escalate` event or count increase because the debugger already ran at High.
 
 ### Do not escalate reasoning for
 
@@ -661,12 +666,12 @@ Adaptive Effort carries only boundaries selected by Superpowers. An adjacent `bo
 Default limits:
 
 ```text
-Low implementation attempts:  1
-Low repair attempts:          1
+Implementation attempts:      1, Low Fast/Balanced or Medium Deep
+Same-effort repair attempts:  1
 Mechanical corrections:      1, separate
 Context continuations:        1 per worker dispatch, separate
 Debugger attempts:            1, Medium Fast/Balanced or High Deep
-Recovery attempts:            1, High
+Recovery attempts:            0 Fast; 1 High in Balanced/Deep
 ```
 
 When the ladder is exhausted, automatic execution stops.
@@ -702,8 +707,9 @@ Modes control Adaptive Effort behavior only. They never modify the active parent
 Implementer       Low
 Cheap repair      Low
 Debugger          Medium
-High recovery     only for strong conceptual evidence
-Additional review only when Superpowers requires it
+Routine review    Low
+High recovery     no automatic route
+Required reviews  unchanged; high-risk review High
 ```
 
 Suitable for routine, low-risk work.
@@ -717,18 +723,21 @@ Implementer       Low
 Cheap repair      Low
 Debugger          Medium
 Recovery          High
-Reviewer effort   Medium, raised to High for risk
+Routine review    Medium, raised to High for risk
 ```
 
 ### Deep
 
 ```text
-Implementer       Low or Medium according to task complexity
+Implementer       Medium
+Cheap repair      Medium
 Debugger          High
 Recovery          High
-Reviewer           higher-effort independent review
+Routine review    High
 Verification       broad
 ```
+
+Implementation effort follows the selected mode directly. Adaptive Effort does not require an upfront work category.
 
 XHigh and Max are outside the automatic routing policy.
 
@@ -888,7 +897,7 @@ Context: fresh
 Escalation:
 
 ```text
-Adaptive Effort: low repair failed deterministic verification;
+Adaptive Effort: same-effort repair failed deterministic verification;
 starting role=debugger · route=<actual-mode-routed-effort>/fresh · mode=<mode>.
 ```
 
@@ -993,8 +1002,11 @@ Low fails, Low repair succeeds
 Low + repair fail
 → fresh mode-routed debugger
 
-Debugger and deterministic evidence identify a contract/design problem
+Balanced/Deep debugger and independent contract/design evidence identify a contract/design problem
 → High recovery role
+
+Fast debugger is spent, even with contract/design evidence
+→ no automatic High recovery; stop
 
 Repeated fingerprint without contract/design evidence
 → no recovery; stop when the debugger is spent
@@ -1091,10 +1103,10 @@ A. Superpowers
 
 B. Superpowers + Adaptive Effort
    Parent Sol / High
-   implementation Low
-   repair Low
-   debugger Medium
-   recovery High only when evidence warrants
+   implementation Low in Fast/Balanced; Medium in Deep
+   repair retains implementation effort
+   debugger Medium in Fast/Balanced; High in Deep
+   recovery explicit-only in Fast; evidence-gated High in Balanced/Deep
 ```
 
 Observe when the host exposes aggregate data:
@@ -1124,12 +1136,12 @@ The plugin snapshot contains:
 - Git marketplace manifest
 - Superpowers dependency detection
 - one implicit Adaptive Effort skill
-- Low implementer
+- mode-routed implementer, Low in Fast/Balanced and Medium in Deep
 - mode-routed debugger, Medium in Fast/Balanced and High in Deep
-- High recovery diagnostician
+- evidence-gated High recovery diagnostician in Balanced/Deep; no automatic recovery in Fast
 - inherited child model
 - fresh-context handoff policy
-- one cheap Low repair
+- one same-effort repair
 - bounded escalation
 - fast, balanced, and deep modes
 - natural overrides

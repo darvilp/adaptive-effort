@@ -10,10 +10,10 @@ Adaptive Effort augments Superpowers with a compute policy. Superpowers decides 
 
 1. Parent model and effort remain user-selected.
 2. Child model is inherited.
-3. Bounded implementation starts at low effort.
+3. Implementation starts at Low in Fast and Balanced; Deep implementation starts at Medium.
 4. One local failure gets one same-thread repair at the existing worker's effort.
-5. Broader implementation failure gets a fresh medium debugger.
-6. Contract or architecture evidence gets one fresh high recovery diagnosis.
+5. Broader implementation failure gets a fresh Medium debugger in Fast/Balanced or High debugger in Deep.
+6. Independent contract or architecture evidence can authorize one fresh High recovery diagnosis in Balanced/Deep; Fast stops before automatic recovery.
 7. Environment failures do not trigger more reasoning.
 8. Child handoffs are compact and fresh.
 9. Superpowers quality gates remain intact.

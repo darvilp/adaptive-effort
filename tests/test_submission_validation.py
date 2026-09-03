@@ -132,18 +132,42 @@ class SubmissionValidationTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("readme", result.stdout.lower())
 
+    def test_validator_rejects_stale_mode_guidance_outside_main_tables(self) -> None:
+        mutations = {
+            "DESIGN.md": (
+                "Implementation starts at Low in Fast and Balanced; Deep implementation starts at Medium.",
+                "Every implementation starts at Low.",
+            ),
+            "docs/design.md": (
+                "reasoning effort:  Medium in Fast/Balanced; High in Deep",
+                "reasoning effort:  Medium",
+            ),
+            "plugins/adaptive-effort/skills/adaptive-effort/references/handoff-templates.md": (
+                "<implementation, retained-effort repair, debugger outcomes>",
+                "<low implementation, low repair, debugger outcomes>",
+            ),
+        }
+        for relative, (approved, stale) in mutations.items():
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as directory:
+                copy = self.copied_repo(directory)
+                path = copy / relative
+                path.write_text(path.read_text().replace(approved, stale))
+                result = self.run_validator(copy)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("routing guidance", result.stdout.lower())
+
     def test_validator_rejects_recovery_authorization_disagreement(self) -> None:
         mutations = {
             "README.md": (
-                "| Recovery diagnostician | High, only with independent contract/design evidence | High, only with independent contract/design evidence | High, only with independent contract/design evidence |",
+                "| Recovery diagnostician | High only when explicitly requested; not automatic | High, only with independent contract/design evidence | High, only with independent contract/design evidence |",
                 "| Recovery diagnostician | High | High | High |",
             ),
             "plugins/adaptive-effort/README.md": (
-                "| Recovery diagnostician | High, only with independent contract/design evidence | High, only with independent contract/design evidence | High, only with independent contract/design evidence |",
+                "| Recovery diagnostician | High only when explicitly requested; not automatic | High, only with independent contract/design evidence | High, only with independent contract/design evidence |",
                 "| Recovery diagnostician | High | High | High |",
             ),
             "plugins/adaptive-effort/skills/adaptive-effort/references/routing-policy.md": (
-                "| Recovery diagnostician | high, only with independent contract/design evidence | high, only with independent contract/design evidence | high, only with independent contract/design evidence |",
+                "| Recovery diagnostician | high only when explicitly requested; not automatic | high, only with independent contract/design evidence | high, only with independent contract/design evidence |",
                 "| Recovery diagnostician | high | high | high |",
             ),
         }
@@ -197,10 +221,9 @@ class SubmissionValidationTests(unittest.TestCase):
             copy = self.copied_repo(directory)
             path = copy / "TEST_RESULTS.md"
             accurate = (
-                "`plugins/adaptive-effort/skills/adaptive-effort/scripts/doctor.py` and the existing "
-                "`route()` effort behavior and matrix are unchanged. "
-                "`plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py` now adds the canonical "
-                "failure-class-to-corrective-route mapping without changing the approved effort matrix."
+                "`plugins/adaptive-effort/skills/adaptive-effort/scripts/doctor.py` remains unchanged. "
+                "`plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py` now differentiates Fast, "
+                "Balanced, and Deep implementation, review, debugging, and automatic recovery routes."
             )
             false_claim = "`scripts/policy.py` and `doctor.py` are unchanged."
             path.write_text(path.read_text().replace(accurate, false_claim))

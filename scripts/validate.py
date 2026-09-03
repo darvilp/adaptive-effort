@@ -34,15 +34,15 @@ REPOSITORY_URL = "https://github.com/darvilp/adaptive-effort"
 AUTHOR_URL = "https://github.com/darvilp"
 PUBLISHER_PLACEHOLDER = "OWN" + "ER"
 SHORT_DESCRIPTION = "Route Superpowers workers"
-LONG_DESCRIPTION = "Adaptive Effort is a Codex compute-policy layer for approved Superpowers implementation plans. It preserves the parent model and effort, routes bounded workers to lower reasoning effort, and uses fresh medium or high agents only after classified evidence warrants debugging or recovery. Superpowers still owns planning, worker topology, TDD, reviews, and verification."
+LONG_DESCRIPTION = "Adaptive Effort is a Codex compute-policy layer for approved Superpowers implementation plans. It preserves the parent model and effort, routes child reasoning by Fast, Balanced, or Deep mode, and uses classified evidence to bound debugging and recovery. Superpowers still owns planning, worker topology, TDD, reviews, and verification."
 CAPABILITIES = [
-    "Route bounded implementation to low effort",
+    "Route implementation and review effort by mode",
     "Escalate failed repairs using evidence",
     "Record compact routing and closeout traces",
 ]
 STARTER_PROMPTS = [
     "Implement this approved Superpowers plan with balanced Adaptive Effort routing.",
-    "Implement this approved multi-file Superpowers plan with deep Adaptive Effort routing.",
+    "Implement this approved Superpowers plan with deep Adaptive Effort routing.",
     "Check Adaptive Effort setup live.",
 ]
 LISTING_URLS = {
@@ -55,18 +55,19 @@ POLICY = runpy.run_path(str(POLICY_PATH))
 POLICY_ROUTE = POLICY["route"]
 FAILURE_ROUTE = POLICY["failure_route"]
 RECOVERY_QUALIFIER = "only with independent contract/design evidence"
+FAST_RECOVERY_QUALIFIER = "only when explicitly requested; not automatic"
 REVIEW_CASE_SEMANTICS = {
-    "balanced-bounded": {
-        "prompt": "Implement this approved bounded Superpowers plan with balanced Adaptive Effort routing.",
+    "balanced-default": {
+        "prompt": "Implement this approved Superpowers plan with balanced Adaptive Effort routing.",
         "expectedWorkflow": "Dispatch one fresh inherited-model Low implementer.",
         "expectedResult": "A compact dispatch/result trace separates worker status from the downstream gate.",
-        "rationale": "Balanced routes bounded implementation to Low.",
+        "rationale": "Balanced routes implementation to Low without an upfront work classification.",
     },
-    "deep-integration": {
-        "prompt": "Implement this approved multi-file Superpowers plan with deep Adaptive Effort routing.",
-        "expectedWorkflow": "Dispatch a fresh inherited-model Medium implementer only after classifying the task as integration work.",
-        "expectedResult": "The compact trace records the Deep Medium integration route and the plan-owned boundary.",
-        "rationale": "Cross-file contract judgment, not diff size alone, justifies the integration route.",
+    "deep-default": {
+        "prompt": "Implement this approved Superpowers plan with deep Adaptive Effort routing.",
+        "expectedWorkflow": "Dispatch a fresh inherited-model Medium implementer without assigning a preliminary work category.",
+        "expectedResult": "The compact trace records the Deep Medium implementation route and the plan-owned boundary.",
+        "rationale": "Deep always starts implementation at Medium.",
     },
     "semantic-repair": {
         "scenario": "After the Low implementer reports, run the checked-in local deterministic defect fixture once and return its exact classified output to the original worker.",
@@ -81,10 +82,10 @@ REVIEW_CASE_SEMANTICS = {
         "rationale": "A separate implementation-reasoning defect established after correction failure warrants the one fresh debugger.",
     },
     "planned-review": {
-        "scenario": "Complete an approved bounded plan and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
-        "expectedWorkflow": "Use each review's planned effort without counting it as an escalation; correct and re-review any finding through the Superpowers workflow.",
+        "scenario": "Complete an approved plan in Fast mode and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
+        "expectedWorkflow": "Use Low for both routine reviews without counting either as an escalation; correct and re-review any finding through the Superpowers workflow.",
         "expectedResult": "Worker status remains separate from each downstream review gate and the escalation count is unchanged.",
-        "rationale": "Planned reviews are workflow gates, not corrective escalation.",
+        "rationale": "Fast lowers routine review effort without removing the workflow gates.",
     },
     "pre-plan": {
         "prompt": "Brainstorm and architect this feature.",
@@ -98,18 +99,18 @@ REVIEW_CASE_SEMANTICS = {
         "expectedResult": "A clear prerequisite failure names the missing Superpowers workflow skills and no Adaptive Effort worker runs.",
         "safeFallback": "Install Superpowers from its public repository, verify its SKILL.md entrypoints, and start another new Codex task.",
     },
-    "ladder-exhausted": {
-        "scenario": "Replay the same fixed public failure fingerprint after the permitted repair and debugger, or request recovery while withholding independent contract/design evidence.",
-        "expectedWorkflow": "Do not restart the ladder and do not dispatch recovery without independent evidence.",
-        "expectedResult": "A bounded stop report records consumed stages and the missing recovery evidence.",
-        "safeFallback": "Return to the user or planning for new evidence, changed scope, or authority.",
+    "fast-recovery-stop": {
+        "scenario": "In Fast mode, exhaust the permitted repair and debugger, then provide independent contract/design evidence that would authorize recovery in Balanced or Deep.",
+        "expectedWorkflow": "Do not restart the ladder and do not dispatch automatic High recovery in Fast.",
+        "expectedResult": "A bounded stop report records the consumed stages and Fast recovery limit.",
+        "safeFallback": "Return to the user or planning, or use Balanced or Deep for evidence-gated automatic recovery.",
     },
 }
 REVIEW_FAILURE_INJECTIONS = {
     "semantic-repair": {
         "command": "python3 scripts/review_case_fixture.py submission/fixtures/local-deterministic-defect.json",
         "expectedExit": 1,
-        "expectedOutput": '{"actual":"medium","boundary":"bounded implementation route","classification":"local deterministic implementation defect","expected":"low","fingerprint":"review-fixture-local-v1","invariant":"Balanced bounded implementation uses Low effort"}',
+        "expectedOutput": '{"actual":"medium","boundary":"Balanced implementation route","classification":"local deterministic implementation defect","expected":"low","fingerprint":"review-fixture-local-v1","invariant":"Balanced implementation uses Low effort"}',
         "sequence": [
             "Run the exact command after the original Low worker reports and the downstream gate detects expected Low but actual Medium.",
             "Copy the single output line and exit code 1 into a same-thread correction sent to the original worker.",
@@ -118,7 +119,7 @@ REVIEW_FAILURE_INJECTIONS = {
     "fresh-debugger": {
         "command": "python3 scripts/review_case_fixture.py submission/fixtures/implementation-reasoning-failure.json",
         "expectedExit": 1,
-        "expectedOutput": '{"actual":"policy low; reviewer evidence medium after correction","boundary":"routing policy and reviewer contract","classification":"implementation-reasoning defect","expected":"low in both policy and reviewer evidence","fingerprint":"review-fixture-reasoning-v1","invariant":"Balanced bounded implementation uses Low effort across policy and reviewer evidence"}',
+        "expectedOutput": '{"actual":"policy low; reviewer evidence medium after correction","boundary":"routing policy and reviewer contract","classification":"implementation-reasoning defect","expected":"low in both policy and reviewer evidence","fingerprint":"review-fixture-reasoning-v1","invariant":"Balanced implementation uses Low effort across policy and reviewer evidence"}',
         "sequence": [
             "Complete the same-thread correction and rerun the exact deterministic verification.",
             "Only if correction verification fails across the canonical policy and reviewer evidence, run the exact command above.",
@@ -250,12 +251,12 @@ def validate() -> list[str]:
         "Do not alter the parent model",
         "omit `model`",
         'fork_turns="none"',
-        "one same-thread low repair",
+        "one semantic same-thread correction",
         "followup_task",
         "Activate implicitly only when",
         "Do not activate for generic delegation",
-        "fresh medium debugger",
-        "high recovery",
+        "Deep always starts implementers at Medium",
+        "Fast stops automatic handling before High recovery",
     ]
     for phrase in required_phrases:
         if phrase not in text:
@@ -308,8 +309,8 @@ def validate() -> list[str]:
         for phrase in ("github.com/obra/superpowers", "new Codex task", "SKILL.md")
     ):
         fail("review pack must provide concrete external Superpowers verification")
-    positive_ids = ["balanced-bounded", "deep-integration", "semantic-repair", "fresh-debugger", "planned-review"]
-    negative_ids = ["pre-plan", "missing-superpowers", "ladder-exhausted"]
+    positive_ids = ["balanced-default", "deep-default", "semantic-repair", "fresh-debugger", "planned-review"]
+    negative_ids = ["pre-plan", "missing-superpowers", "fast-recovery-stop"]
     if [case.get("id") for case in cases["positiveCases"]] != positive_ids or [case.get("id") for case in cases["negativeCases"]] != negative_ids:
         fail("review case scenarios or order mismatch")
     for kind, review_cases in (("positive", cases["positiveCases"]), ("negative", cases["negativeCases"])):
@@ -340,10 +341,14 @@ def validate() -> list[str]:
         serialized = json.dumps(fixture, sort_keys=True, separators=(",", ":"))
         if serialized != injection["expectedOutput"]:
             fail(f"review failure fixture output mismatch: {case_id}")
-    if FAILURE_ROUTE("contract/design defect") != "stop" or FAILURE_ROUTE(
-        "contract/design defect", independent_contract_design_evidence=True,
+    if FAILURE_ROUTE("contract/design defect", mode="balanced") != "stop" or FAILURE_ROUTE(
+        "contract/design defect", mode="balanced", independent_contract_design_evidence=True,
     ) != "recovery":
         fail("canonical recovery authorization rule mismatch")
+    if FAILURE_ROUTE(
+        "contract/design defect", mode="fast", independent_contract_design_evidence=True,
+    ) != "stop":
+        fail("canonical Fast recovery stop rule mismatch")
     portal = (ROOT / "submission/portal-checklist.md").read_text(encoding="utf-8")
     for gate in ("Apps Management Write", "verified `darvilp` identity", "Skills only draft", "exact CI submission artifact", "successful skill scan", "attestations only after", "Submit for Review", "Publish manually", "new-task pickup", "live routing"):
         if gate not in portal:
@@ -353,10 +358,10 @@ def validate() -> list[str]:
     routing_policy = (SKILL.parent / "references/routing-policy.md").read_text(encoding="utf-8")
     escalation_policy = (SKILL.parent / "references/escalation-policy.md").read_text(encoding="utf-8")
     required_readme = [
-        "| Bounded implementation | Low | Low | Low |",
-        "| Integration implementation requiring real cross-file judgment | Low | Low | Medium |",
+        "| Implementation | Low | Low | Medium |",
+        "| Routine spec review | Low | Medium | High |",
         "| Fresh debugger | Medium | Medium | High |",
-        "Fast and Balanced currently choose the same effort for every defined route",
+        "The mode alone selects implementation effort",
         "Superpowers determines the plan tasks, execution boundaries, worker count, sequential versus parallel topology",
         "Planned Medium or High reviewers are planned routes, not escalation events",
     ]
@@ -369,12 +374,14 @@ def validate() -> list[str]:
     ]
     if recovery_efforts != ["high", "high", "high"]:
         fail("canonical recovery route effort mismatch")
-    root_recovery_row = "| Recovery diagnostician | " + " | ".join(
-        f"{effort.title()}, {RECOVERY_QUALIFIER}" for effort in recovery_efforts
-    ) + " |"
-    policy_recovery_row = "| Recovery diagnostician | " + " | ".join(
-        f"{effort}, {RECOVERY_QUALIFIER}" for effort in recovery_efforts
-    ) + " |"
+    root_recovery_row = (
+        f"| Recovery diagnostician | High {FAST_RECOVERY_QUALIFIER} | "
+        f"High, {RECOVERY_QUALIFIER} | High, {RECOVERY_QUALIFIER} |"
+    )
+    policy_recovery_row = (
+        f"| Recovery diagnostician | high {FAST_RECOVERY_QUALIFIER} | "
+        f"high, {RECOVERY_QUALIFIER} | high, {RECOVERY_QUALIFIER} |"
+    )
     if root_recovery_row not in readme:
         fail("README recovery authorization disagrees with canonical policy")
     if root_recovery_row not in bundled_readme:
@@ -384,6 +391,25 @@ def validate() -> list[str]:
     authorization_rule = "Only the recovery diagnostician requires contract/design evidence"
     if authorization_rule not in escalation_policy:
         fail("recovery authorization rule disagrees with canonical policy")
+
+    routing_guidance = {
+        ROOT / "DESIGN.md": (
+            "Implementation starts at Low in Fast and Balanced; Deep implementation starts at Medium.",
+            "Fast stops before automatic recovery.",
+        ),
+        ROOT / "docs" / "design.md": (
+            "reasoning effort:  Medium in Fast/Balanced; High in Deep",
+            "Implementation effort follows the selected mode directly.",
+        ),
+        SKILL.parent / "references" / "handoff-templates.md": (
+            "<implementation, retained-effort repair, debugger outcomes>",
+        ),
+    }
+    for path, phrases in routing_guidance.items():
+        guidance = path.read_text(encoding="utf-8")
+        for phrase in phrases:
+            if phrase not in guidance:
+                fail(f"routing guidance mismatch in {path.relative_to(ROOT)}: {phrase}")
 
     documentation_paths = [
         ROOT / "README.md",
@@ -428,10 +454,9 @@ def validate() -> list[str]:
     if any(is_numeric_test_pass_claim(sentence) for sentence in current_verification_sentences):
         fail("TEST_RESULTS unit-suite evidence uses a brittle numeric count")
     policy_evidence = (
-        "`plugins/adaptive-effort/skills/adaptive-effort/scripts/doctor.py` and the existing "
-        "`route()` effort behavior and matrix are unchanged. "
-        "`plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py` now adds the canonical "
-        "failure-class-to-corrective-route mapping without changing the approved effort matrix."
+        "`plugins/adaptive-effort/skills/adaptive-effort/scripts/doctor.py` remains unchanged. "
+        "`plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py` now differentiates Fast, "
+        "Balanced, and Deep implementation, review, debugging, and automatic recovery routes."
     )
     if policy_evidence not in test_results:
         fail("TEST_RESULTS policy evidence is missing or false")

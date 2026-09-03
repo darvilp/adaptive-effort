@@ -5,29 +5,29 @@
   },
   "positiveCases": [
     {
-      "id": "balanced-bounded",
-      "prompt": "Implement this approved bounded Superpowers plan with balanced Adaptive Effort routing.",
+      "id": "balanced-default",
+      "prompt": "Implement this approved Superpowers plan with balanced Adaptive Effort routing.",
       "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Install and verify Superpowers as described above, start a new Codex task at the checkout root, approve a one-file documentation plan, then send the exact prompt.",
       "expectedWorkflow": "Dispatch one fresh inherited-model Low implementer.",
       "expectedResult": "A compact dispatch/result trace separates worker status from the downstream gate.",
-      "rationale": "Balanced routes bounded implementation to Low."
+      "rationale": "Balanced routes implementation to Low without an upfront work classification."
     },
     {
-      "id": "deep-integration",
-      "prompt": "Implement this approved multi-file Superpowers plan with deep Adaptive Effort routing.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task, and approve a plan that changes scripts/package_submission.py together with its archive-contract tests so genuine cross-file integration judgment is explicit; then send the exact prompt.",
-      "expectedWorkflow": "Dispatch a fresh inherited-model Medium implementer only after classifying the task as integration work.",
-      "expectedResult": "The compact trace records the Deep Medium integration route and the plan-owned boundary.",
-      "rationale": "Cross-file contract judgment, not diff size alone, justifies the integration route."
+      "id": "deep-default",
+      "prompt": "Implement this approved Superpowers plan with deep Adaptive Effort routing.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task, approve a one-file documentation plan, then send the exact prompt.",
+      "expectedWorkflow": "Dispatch a fresh inherited-model Medium implementer without assigning a preliminary work category.",
+      "expectedResult": "The compact trace records the Deep Medium implementation route and the plan-owned boundary.",
+      "rationale": "Deep always starts implementation at Medium."
     },
     {
       "id": "semantic-repair",
       "scenario": "After the Low implementer reports, run the checked-in local deterministic defect fixture once and return its exact classified output to the original worker.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task, approve a bounded test-first plan, and use the checked-in submission/fixtures/local-deterministic-defect.json fixture.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task, approve a test-first plan, and use the checked-in submission/fixtures/local-deterministic-defect.json fixture.",
       "evidenceInjection": {
         "command": "python3 scripts/review_case_fixture.py submission/fixtures/local-deterministic-defect.json",
         "expectedExit": 1,
-        "expectedOutput": "{\"actual\":\"medium\",\"boundary\":\"bounded implementation route\",\"classification\":\"local deterministic implementation defect\",\"expected\":\"low\",\"fingerprint\":\"review-fixture-local-v1\",\"invariant\":\"Balanced bounded implementation uses Low effort\"}",
+        "expectedOutput": "{\"actual\":\"medium\",\"boundary\":\"Balanced implementation route\",\"classification\":\"local deterministic implementation defect\",\"expected\":\"low\",\"fingerprint\":\"review-fixture-local-v1\",\"invariant\":\"Balanced implementation uses Low effort\"}",
         "sequence": [
           "Run the exact command after the original Low worker reports and the downstream gate detects expected Low but actual Medium.",
           "Copy the single output line and exit code 1 into a same-thread correction sent to the original worker."
@@ -44,7 +44,7 @@
       "evidenceInjection": {
         "command": "python3 scripts/review_case_fixture.py submission/fixtures/implementation-reasoning-failure.json",
         "expectedExit": 1,
-        "expectedOutput": "{\"actual\":\"policy low; reviewer evidence medium after correction\",\"boundary\":\"routing policy and reviewer contract\",\"classification\":\"implementation-reasoning defect\",\"expected\":\"low in both policy and reviewer evidence\",\"fingerprint\":\"review-fixture-reasoning-v1\",\"invariant\":\"Balanced bounded implementation uses Low effort across policy and reviewer evidence\"}",
+        "expectedOutput": "{\"actual\":\"policy low; reviewer evidence medium after correction\",\"boundary\":\"routing policy and reviewer contract\",\"classification\":\"implementation-reasoning defect\",\"expected\":\"low in both policy and reviewer evidence\",\"fingerprint\":\"review-fixture-reasoning-v1\",\"invariant\":\"Balanced implementation uses Low effort across policy and reviewer evidence\"}",
         "sequence": [
           "Complete the same-thread correction and rerun the exact deterministic verification.",
           "Only if correction verification fails across the canonical policy and reviewer evidence, run the exact command above.",
@@ -57,11 +57,11 @@
     },
     {
       "id": "planned-review",
-      "scenario": "Complete an approved bounded plan and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
+      "scenario": "Complete an approved plan in Fast mode and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
       "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify the requesting-code-review SKILL.md entrypoint, start a new Codex task, approve a small documentation plan, and retain the initial escalation count for comparison after both reviews.",
-      "expectedWorkflow": "Use each review's planned effort without counting it as an escalation; correct and re-review any finding through the Superpowers workflow.",
+      "expectedWorkflow": "Use Low for both routine reviews without counting either as an escalation; correct and re-review any finding through the Superpowers workflow.",
       "expectedResult": "Worker status remains separate from each downstream review gate and the escalation count is unchanged.",
-      "rationale": "Planned reviews are workflow gates, not corrective escalation."
+      "rationale": "Fast lowers routine review effort without removing the workflow gates."
     }
   ],
   "negativeCases": [
@@ -82,12 +82,12 @@
       "safeFallback": "Install Superpowers from its public repository, verify its SKILL.md entrypoints, and start another new Codex task."
     },
     {
-      "id": "ladder-exhausted",
-      "scenario": "Replay the same fixed public failure fingerprint after the permitted repair and debugger, or request recovery while withholding independent contract/design evidence.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task, use the semantic-repair and fresh-debugger evidence procedure above, then inject the identical command/fingerprint once more without adding independent design evidence.",
-      "expectedWorkflow": "Do not restart the ladder and do not dispatch recovery without independent evidence.",
-      "expectedResult": "A bounded stop report records consumed stages and the missing recovery evidence.",
-      "safeFallback": "Return to the user or planning for new evidence, changed scope, or authority."
+      "id": "fast-recovery-stop",
+      "scenario": "In Fast mode, exhaust the permitted repair and debugger, then provide independent contract/design evidence that would authorize recovery in Balanced or Deep.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task in Fast mode, use the semantic-repair and fresh-debugger evidence procedure above, then add independent contract/design evidence after the debugger is spent.",
+      "expectedWorkflow": "Do not restart the ladder and do not dispatch automatic High recovery in Fast.",
+      "expectedResult": "A bounded stop report records the consumed stages and Fast recovery limit.",
+      "safeFallback": "Return to the user or planning, or use Balanced or Deep for evidence-gated automatic recovery."
     }
   ]
 }

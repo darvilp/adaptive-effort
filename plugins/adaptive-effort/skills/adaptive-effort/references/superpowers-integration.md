@@ -61,7 +61,7 @@ The parent or an independent review step should ensure the implementer did not w
 
 ## Reviews
 
-Superpowers decides which reviewers are mandatory. Adaptive Effort assigns medium effort to routine review and high effort to high-risk/deep review.
+Superpowers decides which reviewers are mandatory. Adaptive Effort assigns Low, Medium, or High effort to routine review in Fast, Balanced, or Deep respectively. High-risk review always uses High.
 
 A planned medium or high reviewer is not an escalation. Only a corrective transition from lower to higher effort after classified failure increments the escalation count.
 
@@ -70,7 +70,8 @@ If a reviewer finds an implementation defect:
 - use the one semantic same-thread correction shared across pre-review verification and all Superpowers review stages when it remains unused; a local review correction consumes it
 - re-run the same reviewer as Superpowers requires
 - If the allowance is already consumed, classify the failure; for an implementation reasoning defect, use the single fresh debugger stage only if it remains unused, routed at Medium in Fast/Balanced and High in Deep
-- If that debugger stage was already consumed, stop automatic handling and report the failed review gate unless contract/design evidence justifies the still-unused single recovery diagnostician
+- If that debugger stage was already consumed, Fast stops automatic handling and reports the failed review gate
+- Balanced and Deep may use the still-unused single recovery diagnostician only when independent contract/design evidence justifies it
 - Only the recovery diagnostician requires contract/design evidence; High effort alone does not make a debugger a recovery, because Deep routes its debugger at High
 
 Never skip the required review, and never repeat the debugger or restart the ladder. Re-run the same reviewer after the corrective route completes.

@@ -186,7 +186,7 @@ EVIDENCE
 <all relevant deterministic failures>
 
 ATTEMPT SUMMARY
-<low implementation, low repair, debugger outcomes>
+<implementation, retained-effort repair, debugger outcomes>
 
 QUESTIONS
 - Can all requirements be satisfied within approved scope?

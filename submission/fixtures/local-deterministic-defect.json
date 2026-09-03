@@ -1,8 +1,8 @@
 {
   "fingerprint": "review-fixture-local-v1",
   "classification": "local deterministic implementation defect",
-  "boundary": "bounded implementation route",
-  "invariant": "Balanced bounded implementation uses Low effort",
+  "boundary": "Balanced implementation route",
+  "invariant": "Balanced implementation uses Low effort",
   "expected": "low",
   "actual": "medium"
 }

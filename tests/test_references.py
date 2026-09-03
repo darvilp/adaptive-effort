@@ -32,6 +32,20 @@ class ReferenceTests(unittest.TestCase):
         self.assertIn("Planned medium/high reviews never count as escalations", routing)
         self.assertIn("Only corrective upward effort transitions count", escalation)
 
+    def test_modes_have_distinct_routes_without_work_classification(self) -> None:
+        routing = (SKILL_ROOT / "references/routing-policy.md").read_text()
+        skill = (SKILL_ROOT / "SKILL.md").read_text()
+
+        self.assertIn("| Implementer | low | low | medium |", routing)
+        self.assertIn("| Routine spec review | low | medium | high |", routing)
+        self.assertIn("| Routine quality review | low | medium | high |", routing)
+        self.assertIn("Fast stops before automatic High recovery", routing)
+        self.assertNotIn("integration_implementer", routing)
+        self.assertNotIn("Multi-file integration implementer", routing)
+        self.assertNotIn("classify implementation", routing.lower())
+        self.assertIn("Deep always starts implementers at Medium", skill)
+        self.assertIn("Fast stops automatic handling before High recovery", skill)
+
     def test_worker_and_gate_outcomes_are_separate(self) -> None:
         text = (SKILL_ROOT / "references/handoff-templates.md").read_text()
         self.assertIn("result   · worker=<status> · gate=<NOT_RUN|PASS|FAIL|BLOCKED>", text)
@@ -86,7 +100,7 @@ class ReferenceTests(unittest.TestCase):
         escalation = (SKILL_ROOT / "references/escalation-policy.md").read_text()
         handoff = (SKILL_ROOT / "references/handoff-templates.md").read_text()
         self.assertIn("one deterministic same-thread mechanical correction", escalation)
-        self.assertIn("does not consume the semantic low-repair allowance", escalation)
+        self.assertIn("does not consume the semantic repair allowance", escalation)
         self.assertIn("A second mechanical correction stops automatic handling", escalation)
         self.assertIn("thread that produced the current diff", escalation)
         for field in (
@@ -122,7 +136,8 @@ class ReferenceTests(unittest.TestCase):
             self.assertIn("single fresh debugger stage", text)
             self.assertIn("Medium in Fast/Balanced and High in Deep", text)
             self.assertIn("If that debugger stage was already consumed", text)
-            self.assertIn("stop automatic handling and report the failed review gate", text)
+            self.assertIn("Fast stops automatic handling and reports the failed review gate", text)
+            self.assertIn("Balanced and Deep may use the still-unused single recovery diagnostician", text)
             self.assertIn("still-unused single recovery diagnostician", text)
             self.assertIn("Only the recovery diagnostician requires contract/design evidence", text)
             self.assertIn("High effort alone does not make a debugger a recovery", text)
@@ -138,6 +153,7 @@ class ReferenceTests(unittest.TestCase):
             visible_trace,
         )
         self.assertNotIn("fresh medium debugger", visible_trace.lower())
+        self.assertNotIn("low repair failed", visible_trace.lower())
         self.assertIn(
             "- debugger: route=<actual-mode-routed-effort>/fresh · mode=<mode> · <outcome>",
             stop_report,

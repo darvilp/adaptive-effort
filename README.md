@@ -188,8 +188,8 @@ python3 -m unittest discover -s tests -v
 ```bash
 make package
 # or individually:
-python3 scripts/package.py --output dist/adaptive-effort-source-0.1.2.zip
-python3 scripts/package_submission.py --output dist/adaptive-effort-plugin-0.1.2.zip
+python3 scripts/package.py --output dist/adaptive-effort-source-0.1.3.zip
+python3 scripts/package_submission.py --output dist/adaptive-effort-plugin-0.1.3.zip
 ```
 
 ## License

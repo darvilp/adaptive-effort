@@ -51,9 +51,9 @@ CI is configured to run validation, the unit suite, independent double builds, c
 
 The installed plugin-creator validator reported only its stale rejection of `policy.products`. The CODEX-only product gate remains in the skill metadata as required.
 
-The 0.1.1 pre-push release acceptance evidence below remains historical. Current 0.1.2 local repository verification does not establish portal, CI, or publication gates.
+The 0.1.1 pre-push release acceptance evidence below remains historical. Current 0.1.3 local repository verification does not establish portal, CI, or publication gates.
 
-The historical 0.1.1 release archive was `dist/adaptive-effort-plugin-0.1.1.zip`. The 0.1.2 source and submission archive names are `dist/adaptive-effort-source-0.1.2.zip` and `dist/adaptive-effort-plugin-0.1.2.zip`.
+The historical 0.1.1 release archive was `dist/adaptive-effort-plugin-0.1.1.zip`. The 0.1.3 source and submission archive names are `dist/adaptive-effort-source-0.1.3.zip` and `dist/adaptive-effort-plugin-0.1.3.zip`.
 
 `git diff --check` passed. Changed public files contained no CRLF or trailing whitespace. Scans found no publisher placeholder, no active 0.1.0 package command or path, and no tracked generated artifact. The only 0.1.0 archive-name match is a package regression assertion that excludes the obsolete archive. `plugins/adaptive-effort/skills/adaptive-effort/scripts/doctor.py` remains unchanged. `plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py` now differentiates Fast, Balanced, and Deep implementation, review, debugging, and automatic recovery routes.
 
@@ -65,14 +65,14 @@ The static doctor returned `STATIC_READY`: the Adaptive Effort skill, required S
 
 Historical installed-cache inspection found Adaptive Effort 0.1.0 and Superpowers 6.3.0. That older evidence proves the prior installation only; it is not 0.1.1 acceptance evidence.
 
-Historical 0.1.0 runtime smoke proved that the spawn/tool path completed with the requested settings. It does not independently observe or prove the child's model, effort, or context metadata. Historical fresh-task pickup also remains prior-release evidence. The 0.1.2 installed-cache inspection and fresh-task startup proof are post-push acceptance gates and must be reported in the release handoff. Repository validation does not substitute for either gate.
+Historical 0.1.0 runtime smoke proved that the spawn/tool path completed with the requested settings. It does not independently observe or prove the child's model, effort, or context metadata. Historical fresh-task pickup also remains prior-release evidence. The 0.1.3 installed-cache inspection and fresh-task startup proof are post-push acceptance gates and must be reported in the release handoff. Repository validation does not substitute for either gate.
 
 ## Not executed in this build environment
 
 - installation through a real `codex plugin marketplace add`
 - installation through a real `codex plugin add`
-- 0.1.2 installed-cache inspection
-- 0.1.2 fresh-task startup proof
+- 0.1.3 installed-cache inspection
+- 0.1.3 fresh-task startup proof
 - full authenticated implementation workflow beyond the exact smoke
 - IDE discovery, because Codex IDE extensions do not currently support plugins
 - token/latency comparison against an all-High workflow

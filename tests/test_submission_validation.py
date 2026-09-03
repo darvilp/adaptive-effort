@@ -52,8 +52,8 @@ class SubmissionValidationTests(unittest.TestCase):
             cases = json.loads(path.read_text())
             for case in cases["positiveCases"] + cases["negativeCases"]:
                 case["publicSetup"] = case["publicSetup"].replace(
-                    "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2.",
-                    "Clone https://github.com/darvilp/adaptive-effort at tag 0.1.2,",
+                    "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3.",
+                    "Clone https://github.com/darvilp/adaptive-effort at tag 0.1.3,",
                 )
             path.write_text(json.dumps(cases))
             result = self.run_validator(copy)

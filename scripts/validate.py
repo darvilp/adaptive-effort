@@ -131,7 +131,7 @@ REVIEW_FAILURE_ROUTES = {
     "semantic-repair": "semantic_correction",
     "fresh-debugger": "debugger",
 }
-REVIEW_SETUP_PREFIX = "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2."
+REVIEW_SETUP_PREFIX = "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3."
 CURRENT_PLUGIN_URLS = {
     "https://developers.openai.com/plugins",
     "https://developers.openai.com/plugins/build/plugins",
@@ -201,8 +201,8 @@ def validate() -> list[str]:
         fail("manifest name must match plugin folder")
     if manifest.get("description") != SHORT_DESCRIPTION:
         fail("manifest description mismatch")
-    if manifest["version"] != "0.1.2":
-        fail("manifest version must be 0.1.2")
+    if manifest["version"] != "0.1.3":
+        fail("manifest version must be 0.1.3")
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?", manifest["version"]):
         fail("manifest version is not semver-like")
     if manifest["skills"] != "./skills/":
@@ -294,7 +294,7 @@ def validate() -> list[str]:
     listing = load_json(ROOT / "submission/listing.json")
     cases = load_json(ROOT / "submission/review-cases.json")
     expected_listing = {
-        "name": "adaptive-effort", "version": "0.1.2", "displayName": "Adaptive Effort",
+        "name": "adaptive-effort", "version": "0.1.3", "displayName": "Adaptive Effort",
         "shortDescription": SHORT_DESCRIPTION, "longDescription": LONG_DESCRIPTION,
         "developerName": "darvilp", "category": "Developer Tools",
         "capabilities": CAPABILITIES, "starterPrompts": STARTER_PROMPTS, **LISTING_URLS,
@@ -321,7 +321,7 @@ def validate() -> list[str]:
             setup = case.get("publicSetup", "")
             if REPOSITORY_URL not in setup or "new Codex task" not in setup:
                 fail(f"review case is not publicly reproducible: {case.get('id')}")
-            if "tag 0.1.2" in setup.lower() or not setup.startswith(REVIEW_SETUP_PREFIX):
+            if "tag 0.1.3" in setup.lower() or not setup.startswith(REVIEW_SETUP_PREFIX):
                 fail(f"review case public setup must use public main and manifest version: {case.get('id')}")
             expected_semantics = REVIEW_CASE_SEMANTICS[case["id"]]
             actual_semantics = {field: case.get(field) for field in expected_semantics}

@@ -1,6 +1,6 @@
 {
   "name": "adaptive-effort",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "displayName": "Adaptive Effort",
   "shortDescription": "Route Superpowers workers",
   "longDescription": "Adaptive Effort is a Codex compute-policy layer for approved Superpowers implementation plans. It preserves the parent model and effort, routes child reasoning by Fast, Balanced, or Deep mode, and uses classified evidence to bound debugging and recovery. Superpowers still owns planning, worker topology, TDD, reviews, and verification.",

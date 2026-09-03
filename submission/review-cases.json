@@ -7,7 +7,7 @@
     {
       "id": "balanced-default",
       "prompt": "Implement this approved Superpowers plan with balanced Adaptive Effort routing.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Install and verify Superpowers as described above, start a new Codex task at the checkout root, approve a one-file documentation plan, then send the exact prompt.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Install and verify Superpowers as described above, start a new Codex task at the checkout root, approve a one-file documentation plan, then send the exact prompt.",
       "expectedWorkflow": "Dispatch one fresh inherited-model Low implementer.",
       "expectedResult": "A compact dispatch/result trace separates worker status from the downstream gate.",
       "rationale": "Balanced routes implementation to Low without an upfront work classification."
@@ -15,7 +15,7 @@
     {
       "id": "deep-default",
       "prompt": "Implement this approved Superpowers plan with deep Adaptive Effort routing.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task, approve a one-file documentation plan, then send the exact prompt.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify Superpowers, start a new Codex task, approve a one-file documentation plan, then send the exact prompt.",
       "expectedWorkflow": "Dispatch a fresh inherited-model Medium implementer without assigning a preliminary work category.",
       "expectedResult": "The compact trace records the Deep Medium implementation route and the plan-owned boundary.",
       "rationale": "Deep always starts implementation at Medium."
@@ -23,7 +23,7 @@
     {
       "id": "semantic-repair",
       "scenario": "After the Low implementer reports, run the checked-in local deterministic defect fixture once and return its exact classified output to the original worker.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task, approve a test-first plan, and use the checked-in submission/fixtures/local-deterministic-defect.json fixture.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify Superpowers, start a new Codex task, approve a test-first plan, and use the checked-in submission/fixtures/local-deterministic-defect.json fixture.",
       "evidenceInjection": {
         "command": "python3 scripts/review_case_fixture.py submission/fixtures/local-deterministic-defect.json",
         "expectedExit": 1,
@@ -40,7 +40,7 @@
     {
       "id": "fresh-debugger",
       "scenario": "Only after the permitted same-thread correction reports and deterministic correction verification still fails, run the separate checked-in reasoning-defect fixture and classify that evidence as an implementation-reasoning defect.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task, complete the semantic-repair procedure above, require a failed correction verification, and use submission/fixtures/implementation-reasoning-failure.json without changes.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify Superpowers, start a new Codex task, complete the semantic-repair procedure above, require a failed correction verification, and use submission/fixtures/implementation-reasoning-failure.json without changes.",
       "evidenceInjection": {
         "command": "python3 scripts/review_case_fixture.py submission/fixtures/implementation-reasoning-failure.json",
         "expectedExit": 1,
@@ -58,7 +58,7 @@
     {
       "id": "planned-review",
       "scenario": "Complete an approved plan in Fast mode and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify the requesting-code-review SKILL.md entrypoint, start a new Codex task, approve a small documentation plan, and retain the initial escalation count for comparison after both reviews.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify the requesting-code-review SKILL.md entrypoint, start a new Codex task, approve a small documentation plan, and retain the initial escalation count for comparison after both reviews.",
       "expectedWorkflow": "Use Low for both routine reviews without counting either as an escalation; correct and re-review any finding through the Superpowers workflow.",
       "expectedResult": "Worker status remains separate from each downstream review gate and the escalation count is unchanged.",
       "rationale": "Fast lowers routine review effort without removing the workflow gates."
@@ -68,7 +68,7 @@
     {
       "id": "pre-plan",
       "prompt": "Brainstorm and architect this feature.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task at the checkout root, and send the prompt before approving any implementation plan.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify Superpowers, start a new Codex task at the checkout root, and send the prompt before approving any implementation plan.",
       "expectedWorkflow": "Do not activate Adaptive Effort.",
       "expectedResult": "Normal Superpowers design work occurs with no Adaptive Effort worker or routing trace.",
       "safeFallback": "Finish design and obtain explicit plan approval before implementation."
@@ -76,7 +76,7 @@
     {
       "id": "missing-superpowers",
       "scenario": "Attempt an approved-plan implementation after confirming that the required Superpowers SKILL.md entrypoints are absent or disabled.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Start a new Codex task without installing Superpowers, inspect the active skill inventory, and record the missing entrypoints before requesting implementation.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Start a new Codex task without installing Superpowers, inspect the active skill inventory, and record the missing entrypoints before requesting implementation.",
       "expectedWorkflow": "Stop before dispatch.",
       "expectedResult": "A clear prerequisite failure names the missing Superpowers workflow skills and no Adaptive Effort worker runs.",
       "safeFallback": "Install Superpowers from its public repository, verify its SKILL.md entrypoints, and start another new Codex task."
@@ -84,7 +84,7 @@
     {
       "id": "fast-recovery-stop",
       "scenario": "In Fast mode, exhaust the permitted repair and debugger, then provide independent contract/design evidence that would authorize recovery in Balanced or Deep.",
-      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.2. Verify Superpowers, start a new Codex task in Fast mode, use the semantic-repair and fresh-debugger evidence procedure above, then add independent contract/design evidence after the debugger is spent.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify Superpowers, start a new Codex task in Fast mode, use the semantic-repair and fresh-debugger evidence procedure above, then add independent contract/design evidence after the debugger is spent.",
       "expectedWorkflow": "Do not restart the ladder and do not dispatch automatic High recovery in Fast.",
       "expectedResult": "A bounded stop report records the consumed stages and Fast recovery limit.",
       "safeFallback": "Return to the user or planning, or use Balanced or Deep for evidence-gated automatic recovery."

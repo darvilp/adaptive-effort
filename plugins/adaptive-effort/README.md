@@ -2,19 +2,21 @@
 
 Adaptive Effort is a skills-only Codex plugin that adds reasoning-effort routing and bounded escalation to Superpowers implementation workflows.
 
-It keeps the parent model and effort selected by the user, then applies this Balanced default child ladder:
+It keeps the parent model and effort selected by the user. This example shows the Balanced no-override defaults:
 
 ```text
-low implementation
-  → one low repair
-  → fresh medium debugger
-  → fresh high recovery diagnosis
+profile.implementer
+  → one same-thread repair at the actual writer route
+  → fresh profile.debugger
+  → fresh profile.recovery after authorization
   → stop or return to planning
 ```
 
 Superpowers remains responsible for planning, TDD, reviews, and verification.
 
-## Routing modes
+## No-override defaults
+
+The matrix contains the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
 
 | Route | Fast | Balanced | Deep |
 |---|---:|---:|---:|
@@ -25,7 +27,7 @@ Superpowers remains responsible for planning, TDD, reviews, and verification.
 | High-risk review | High | High | High |
 | Recovery diagnostician | High only when explicitly requested; not automatic | High, only with independent contract/design evidence | High, only with independent contract/design evidence |
 
-Balanced is the default. Fast uses Low for implementation and routine reviews, Medium for debugging, and stops automatic handling before High recovery. Balanced uses Low implementation, Medium routine reviews and debugging, and evidence-gated High recovery. Deep always starts implementation at Medium and routes debugging and routine reviews at High. No upfront work classification is required. Required reviews still run, and high-risk review remains High in every mode. Planned reviewers are not escalation events. Adaptive Effort never automatically chooses `xhigh`, `max`, or `ultra`.
+Balanced is the default. The matrix applies only to roles without explicit assignments. No upfront work classification is required. Required reviews still run. Planned reviewers are not escalation events. Adaptive Effort never automatically chooses `xhigh`, `max`, or `ultra`.
 
 Superpowers coordinates the approved plan, chooses tasks, boundaries, worker count and topology, and requires TDD. A fresh implementer handles each approved task. Superpowers runs specification review before code-quality review; findings are corrected and re-reviewed before final verification. Adaptive Effort changes child effort and handoffs, classifies failures, and bounds correction and escalation. Worker count and aggregate usage are optional AAR observations, not routing inputs or per-agent accounting promises.
 

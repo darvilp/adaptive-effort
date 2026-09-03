@@ -54,23 +54,26 @@ LISTING_URLS = {
 POLICY = runpy.run_path(str(POLICY_PATH))
 POLICY_ROUTE = POLICY["route"]
 FAILURE_ROUTE = POLICY["failure_route"]
+EFFORT_OVERRIDES = POLICY["EffortOverrides"]
+VALIDATE_EFFORT_CAPS = POLICY["validate_effort_caps"]
+REPAIR_EFFORT = POLICY["repair_effort"]
 RECOVERY_QUALIFIER = "only with independent contract/design evidence"
 FAST_RECOVERY_QUALIFIER = "only when explicitly requested; not automatic"
 REVIEW_CASE_SEMANTICS = {
     "balanced-default": {
-        "prompt": "Implement this approved Superpowers plan with balanced Adaptive Effort routing.",
+        "prompt": "Implement this approved Superpowers plan with balanced Adaptive Effort routing and no role assignments.",
         "expectedWorkflow": "Dispatch one fresh inherited-model Low implementer.",
         "expectedResult": "A compact dispatch/result trace separates worker status from the downstream gate.",
         "rationale": "Balanced routes implementation to Low without an upfront work classification.",
     },
     "deep-default": {
-        "prompt": "Implement this approved Superpowers plan with deep Adaptive Effort routing.",
+        "prompt": "Implement this approved Superpowers plan with deep Adaptive Effort routing and no role assignments.",
         "expectedWorkflow": "Dispatch a fresh inherited-model Medium implementer without assigning a preliminary work category.",
         "expectedResult": "The compact trace records the Deep Medium implementation route and the plan-owned boundary.",
         "rationale": "Deep always starts implementation at Medium.",
     },
     "semantic-repair": {
-        "scenario": "After the Low implementer reports, run the checked-in local deterministic defect fixture once and return its exact classified output to the original worker.",
+        "scenario": "In this Balanced example with no role assignments, after the Low implementer reports, run the checked-in local deterministic defect fixture once and return its exact classified output to the original worker.",
         "expectedWorkflow": "Send one same-thread correction to the original worker at its original effort.",
         "expectedResult": "One repair event cites the injected evidence, followed by separate worker and gate results.",
         "rationale": "The deterministic correction uses the single semantic allowance without a fresh worker.",
@@ -82,10 +85,16 @@ REVIEW_CASE_SEMANTICS = {
         "rationale": "A separate implementation-reasoning defect established after correction failure warrants the one fresh debugger.",
     },
     "planned-review": {
-        "scenario": "Complete an approved plan in Fast mode and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
+        "scenario": "Complete an approved plan in Fast mode with no role assignments and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
         "expectedWorkflow": "Use Low for both routine reviews without counting either as an escalation; correct and re-review any finding through the Superpowers workflow.",
         "expectedResult": "Worker status remains separate from each downstream review gate and the escalation count is unchanged.",
         "rationale": "Fast lowers routine review effort without removing the workflow gates.",
+    },
+    "task-local-effort-overrides": {
+        "prompt": "Use Fast handling with effort implementer=medium routine-review=high high-risk-review=low debugger=xhigh recovery=max for this approved Superpowers task.",
+        "expectedWorkflow": "Apply the five explicit role values over Fast defaults, retain worker effort for repairs, and check host/model compatibility before each dispatch when available.",
+        "expectedResult": "The initial trace lists the canonical task-local overrides; High-risk review uses Low, and Fast recovery at Max still requires independent contract/design evidence.",
+        "rationale": "Explicit task-local role values take precedence without changing repair identity, compatibility checks, or recovery authorization.",
     },
     "pre-plan": {
         "prompt": "Brainstorm and architect this feature.",
@@ -137,6 +146,41 @@ CURRENT_PLUGIN_URLS = {
     "https://developers.openai.com/plugins/build/plugins",
     "https://developers.openai.com/plugins/deploy/submission",
 }
+ROUTING_POLICY_CONSUMERS = (
+    ROOT / "README.md",
+    ROOT / "DESIGN.md",
+    ROOT / "docs/design.md",
+    ROOT / "TEST_DRIVE.md",
+    PLUGIN / "README.md",
+    SKILL,
+    SKILL.parent / "references/routing-policy.md",
+    SKILL.parent / "references/escalation-policy.md",
+    SKILL.parent / "references/superpowers-integration.md",
+)
+ROUTING_CONTRACT_PHRASES = (
+    "no-override defaults",
+    "Explicit role assignments patch the selected mode's profile",
+    "`profile.implementer`",
+    "`profile.routine_review`",
+    "`profile.high_risk_review`",
+    "`profile.debugger`",
+    "`profile.recovery`",
+    "`profile.recovery_explicitly_requested`",
+    "independent contract/design evidence",
+    "actual writer route",
+)
+FIXED_EFFORT_REVIEW_CASE_IDS = (
+    "balanced-default",
+    "deep-default",
+    "semantic-repair",
+    "planned-review",
+)
+FORBIDDEN_UNCONDITIONAL_ROUTING = (
+    "Action: start a fresh debugger at medium effort, or high in deep mode.",
+    "Action: stop automatic handling in Fast.",
+    "Fast has no automatic recovery transition.",
+    "- recovery diagnostician: route=high/fresh",
+)
 
 
 def fail(message: str) -> None:
@@ -301,15 +345,15 @@ def validate() -> list[str]:
     }
     if listing != expected_listing:
         fail("submission listing does not match the exact approved metadata")
-    if len(cases.get("positiveCases", [])) != 5 or len(cases.get("negativeCases", [])) != 3:
-        fail("review pack must contain exactly five positive and three negative cases")
+    if len(cases.get("positiveCases", [])) != 6 or len(cases.get("negativeCases", [])) != 3:
+        fail("review pack must contain exactly six positive and three negative cases")
     prerequisite = cases.get("externalPrerequisite", {})
     if prerequisite.get("name") != "Superpowers" or not all(
         phrase in prerequisite.get("verification", "")
         for phrase in ("github.com/obra/superpowers", "new Codex task", "SKILL.md")
     ):
         fail("review pack must provide concrete external Superpowers verification")
-    positive_ids = ["balanced-default", "deep-default", "semantic-repair", "fresh-debugger", "planned-review"]
+    positive_ids = ["balanced-default", "deep-default", "semantic-repair", "fresh-debugger", "planned-review", "task-local-effort-overrides"]
     negative_ids = ["pre-plan", "missing-superpowers", "fast-recovery-stop"]
     if [case.get("id") for case in cases["positiveCases"]] != positive_ids or [case.get("id") for case in cases["negativeCases"]] != negative_ids:
         fail("review case scenarios or order mismatch")
@@ -323,6 +367,13 @@ def validate() -> list[str]:
                 fail(f"review case is not publicly reproducible: {case.get('id')}")
             if "tag 0.1.3" in setup.lower() or not setup.startswith(REVIEW_SETUP_PREFIX):
                 fail(f"review case public setup must use public main and manifest version: {case.get('id')}")
+            if kind == "positive" and case["id"] in FIXED_EFFORT_REVIEW_CASE_IDS:
+                serialized_case = json.dumps(case).lower()
+                if "no role assignments" not in serialized_case:
+                    fail(
+                        "fixed-effort review case must say no role assignments: "
+                        f"{case['id']}"
+                    )
             expected_semantics = REVIEW_CASE_SEMANTICS[case["id"]]
             actual_semantics = {field: case.get(field) for field in expected_semantics}
             if actual_semantics != expected_semantics:
@@ -341,6 +392,72 @@ def validate() -> list[str]:
         serialized = json.dumps(fixture, sort_keys=True, separators=(",", ":"))
         if serialized != injection["expectedOutput"]:
             fail(f"review failure fixture output mismatch: {case_id}")
+    override_fixture = load_json(ROOT / "submission/fixtures/task-local-effort-overrides.json")
+    expected_assignments = [
+        "implementer=medium",
+        "routine-review=high",
+        "high-risk-review=low",
+        "debugger=xhigh",
+        "recovery=max",
+    ]
+    if override_fixture != {
+        "mode": "fast",
+        "effortAssignments": expected_assignments,
+        "routes": [
+            {"name": "implementer", "role": "implementer", "expectedEffort": "medium"},
+            {"name": "routine-review", "role": "reviewer", "risk": "routine", "expectedEffort": "high"},
+            {"name": "high-risk-review", "role": "reviewer", "risk": "high", "expectedEffort": "low"},
+            {"name": "debugger", "role": "debugger", "expectedEffort": "xhigh"},
+            {"name": "recovery", "role": "recovery", "expectedEffort": "max"},
+        ],
+        "repairs": [
+            {"currentWriterRole": "implementer", "expectedEffort": "medium"},
+            {"currentWriterRole": "debugger", "expectedEffort": "xhigh"},
+            {"currentWriterRole": "recovery", "expectedEffort": "max"},
+        ],
+        "conflictingInput": {
+            "cap": "implementer=low",
+            "assignment": "implementer=high",
+            "expectedError": "effort override conflicts with cap: implementer=high exceeds low",
+        },
+        "fastRecovery": {"withoutEvidence": "stop", "withEvidence": "recovery"},
+    }:
+        fail("task-local effort override fixture mismatch")
+    override_values = {
+        key.replace("-", "_"): effort
+        for key, effort in (
+            assignment.split("=", 1)
+            for assignment in override_fixture["effortAssignments"]
+        )
+    }
+    effort_overrides = EFFORT_OVERRIDES(**override_values)
+    for repair in override_fixture["repairs"]:
+        writer_route = POLICY_ROUTE(
+            override_fixture["mode"], repair["currentWriterRole"],
+            effort_overrides=effort_overrides,
+        )
+        if REPAIR_EFFORT(writer_route) != repair["expectedEffort"]:
+            fail("task-local repair does not retain current writer effort")
+    conflict = override_fixture["conflictingInput"]
+    try:
+        VALIDATE_EFFORT_CAPS(
+            EFFORT_OVERRIDES(implementer=conflict["assignment"].split("=", 1)[1]),
+            EFFORT_OVERRIDES(implementer=conflict["cap"].split("=", 1)[1]),
+        )
+    except ValueError as exc:
+        if str(exc) != conflict["expectedError"]:
+            fail("task-local cap conflict error mismatch")
+    else:
+        fail("task-local cap conflict was not rejected")
+    recovery = override_fixture["fastRecovery"]
+    if FAILURE_ROUTE(
+        "contract/design defect", mode="fast", effort_overrides=effort_overrides,
+    ) != recovery["withoutEvidence"] or FAILURE_ROUTE(
+        "contract/design defect", mode="fast",
+        independent_contract_design_evidence=True,
+        effort_overrides=effort_overrides,
+    ) != recovery["withEvidence"]:
+        fail("task-local Fast recovery authorization mismatch")
     if FAILURE_ROUTE("contract/design defect", mode="balanced") != "stop" or FAILURE_ROUTE(
         "contract/design defect", mode="balanced", independent_contract_design_evidence=True,
     ) != "recovery":
@@ -361,9 +478,9 @@ def validate() -> list[str]:
         "| Implementation | Low | Low | Medium |",
         "| Routine spec review | Low | Medium | High |",
         "| Fresh debugger | Medium | Medium | High |",
-        "The mode alone selects implementation effort",
+        "Explicit role assignments patch the selected mode's profile",
         "Superpowers determines the plan tasks, execution boundaries, worker count, sequential versus parallel topology",
-        "Planned Medium or High reviewers are planned routes, not escalation events",
+        "Planned reviewers are planned routes, not escalation events",
     ]
     for phrase in required_readme:
         if phrase not in readme:
@@ -392,14 +509,29 @@ def validate() -> list[str]:
     if authorization_rule not in escalation_policy:
         fail("recovery authorization rule disagrees with canonical policy")
 
+    for path in ROUTING_POLICY_CONSUMERS:
+        consumer = path.read_text(encoding="utf-8")
+        for phrase in ROUTING_CONTRACT_PHRASES:
+            if phrase not in consumer:
+                fail(
+                    "routing policy consumer omits the task-local profile contract in "
+                    f"{path.relative_to(ROOT)}: {phrase}"
+                )
+        for stale in FORBIDDEN_UNCONDITIONAL_ROUTING:
+            if stale.lower() in consumer.lower():
+                fail(
+                    "routing policy consumer contains unconditional fixed routing in "
+                    f"{path.relative_to(ROOT)}: {stale}"
+                )
+
     routing_guidance = {
         ROOT / "DESIGN.md": (
-            "Implementation starts at Low in Fast and Balanced; Deep implementation starts at Medium.",
-            "Fast stops before automatic recovery.",
+            "A broader implementation failure gets one fresh debugger at `profile.debugger`.",
+            "Recovery uses `profile.recovery` only with independent contract/design evidence.",
         ),
         ROOT / "docs" / "design.md": (
-            "reasoning effort:  Medium in Fast/Balanced; High in Deep",
-            "Implementation effort follows the selected mode directly.",
+            "reasoning effort:  profile.debugger",
+            "Explicit role assignments replace the corresponding values above.",
         ),
         SKILL.parent / "references" / "handoff-templates.md": (
             "<implementation, retained-effort repair, debugger outcomes>",

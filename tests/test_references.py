@@ -8,9 +8,136 @@ SKILL_ROOT = ROOT / "plugins/adaptive-effort/skills/adaptive-effort"
 
 
 class ReferenceTests(unittest.TestCase):
+    ROUTING_POLICY_CONSUMERS = (
+        ROOT / "README.md",
+        ROOT / "DESIGN.md",
+        ROOT / "docs/design.md",
+        ROOT / "TEST_DRIVE.md",
+        ROOT / "plugins/adaptive-effort/README.md",
+        SKILL_ROOT / "SKILL.md",
+        SKILL_ROOT / "references/routing-policy.md",
+        SKILL_ROOT / "references/escalation-policy.md",
+        SKILL_ROOT / "references/superpowers-integration.md",
+    )
+
+    def test_task_local_effort_overrides_have_one_consistent_contract(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text()
+        routing = (SKILL_ROOT / "references/routing-policy.md").read_text()
+        for text in (skill, routing):
+            self.assertIn("implementer", text)
+            self.assertIn("routine-review", text)
+            self.assertIn("high-risk-review", text)
+            self.assertIn("debugger", text)
+            self.assertIn("recovery", text)
+            self.assertIn("low, medium, high, xhigh, max, or ultra", text)
+            self.assertIn("Explicit per-role values override the selected mode", text)
+            self.assertIn("Repair is not an override role", text)
+            self.assertIn("host/model compatibility", text)
+            self.assertIn("Fast recovery", text)
+            self.assertIn("independent contract/design evidence", text)
+        self.assertIn("overrides=<canonical-role:effort,...>", skill)
+        self.assertIn("overrides=<canonical-role:effort,...>", routing)
+
+    def test_operational_flow_consumes_one_resolved_profile(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text()
+        routing = (SKILL_ROOT / "references/routing-policy.md").read_text()
+        flow = skill.split("## Per-task flow", 1)[1].split("## Handoff discipline", 1)[0]
+        reviews = skill.split("## Reviews", 1)[1].split("## Visible trace", 1)[0]
+        repair = skill.split("## Repair and escalation", 1)[1].split("## Reviews", 1)[0]
+
+        self.assertIn("Resolve the task-local profile before any dispatch", flow)
+        for role in ("implementer", "debugger", "recovery"):
+            self.assertIn(f"`profile.{role}`", flow + repair)
+        for role in ("routine_review", "high_risk_review"):
+            self.assertIn(f"`profile.{role}`", reviews)
+        for stale in (
+            "low effort in fast/balanced",
+            "medium effort in deep",
+            "at medium in fast/balanced or high in deep",
+            "dispatch the separate recovery role at high",
+            "fast routine spec or quality review: low",
+            "balanced routine spec or quality review: medium",
+            "deep routine spec or quality review: high",
+            "high-risk, security-sensitive, concurrency, migration, or architectural review: high",
+        ):
+            self.assertNotIn(stale, skill.lower())
+
+        self.assertIn("no-override defaults", routing)
+        spawn_defaults = routing.split("## Spawn defaults", 1)[1].split("## Task-local caps", 1)[0]
+        for role in ("implementer", "debugger", "recovery", "routine_review", "high_risk_review"):
+            self.assertIn(f"`profile.{role}`", spawn_defaults)
+        self.assertNotIn("reasoning_effort: low in fast/balanced", spawn_defaults)
+        self.assertNotIn("reasoning_effort: medium (high in deep)", spawn_defaults)
+        self.assertNotIn("reasoning_effort: high\n", spawn_defaults)
+        self.assertNotIn("profile.routine-review", skill + routing)
+        self.assertNotIn("profile.high-risk-review", skill + routing)
+        self.assertIn("`profile.recovery_explicitly_requested`", skill)
+        self.assertIn("`profile.recovery_explicitly_requested`", routing)
+
+    def test_every_routing_policy_consumer_carries_the_override_contract(self) -> None:
+        required = (
+            "no-override defaults",
+            "Explicit role assignments patch the selected mode's profile",
+            "`profile.implementer`",
+            "`profile.routine_review`",
+            "`profile.high_risk_review`",
+            "`profile.debugger`",
+            "`profile.recovery`",
+            "`profile.recovery_explicitly_requested`",
+            "independent contract/design evidence",
+            "actual writer route",
+        )
+        for path in self.ROUTING_POLICY_CONSUMERS:
+            with self.subTest(path=path.relative_to(ROOT)):
+                text = path.read_text()
+                for phrase in required:
+                    self.assertIn(phrase, text)
+
+    def test_repair_guidance_never_narrows_the_writer_to_the_initial_implementer(self) -> None:
+        routing = (SKILL_ROOT / "references/routing-policy.md").read_text()
+        repair_guidance = routing.split(
+            "The repair row is not a spawn route.", 1
+        )[1].split("## Risk signals", 1)[0]
+        self.assertIn("actual writer route", repair_guidance)
+        self.assertNotIn("existing implementer thread", repair_guidance)
+        self.assertNotIn("original Low or Medium effort", repair_guidance)
+
+    def test_escalation_policy_routes_non_default_debugging_and_recovery(self) -> None:
+        escalation = (SKILL_ROOT / "references/escalation-policy.md").read_text()
+        self.assertIn("debugger=xhigh", escalation)
+        self.assertIn("recovery=max", escalation)
+        self.assertIn("route=xhigh/fresh", escalation)
+        self.assertIn("route=max/fresh", escalation)
+        self.assertIn(
+            "Compare the actual resolved efforts before recording an `escalate` event",
+            escalation,
+        )
+        for stale in (
+            "Action: start a fresh debugger at medium effort, or high in deep mode.",
+            "Action: stop automatic handling in Fast.",
+            "Fast has no automatic recovery transition.",
+            "- recovery diagnostician: route=high/fresh",
+        ):
+            self.assertNotIn(stale, escalation)
+
+    def test_conflicting_caps_stop_before_profile_resolution(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text()
+        routing = (SKILL_ROOT / "references/routing-policy.md").read_text()
+        required = (
+            "A cap and a role assignment that disagree are a conflict",
+            "stop before dispatch",
+            "report the conflicting role and value",
+            "keep implementation low",
+            "implementer=high",
+        )
+        for text in (skill, routing):
+            normalized = " ".join(text.lower().split())
+            for phrase in required:
+                self.assertIn(phrase.lower(), normalized)
+
     def test_circuit_breaker_is_bounded(self) -> None:
         text = (SKILL_ROOT / "references/escalation-policy.md").read_text().lower()
-        for stage in ("initial implementer", "same-thread local repair", "fresh debugger", "high recovery"):
+        for stage in ("initial implementer", "same-thread local repair", "fresh debugger", "recovery diagnostician"):
             self.assertIn(stage, text)
         self.assertIn("never silently restart the ladder", text)
 
@@ -80,14 +207,16 @@ class ReferenceTests(unittest.TestCase):
 
     def test_cross_boundary_recovery_requires_design_evidence(self) -> None:
         escalation = (SKILL_ROOT / "references/escalation-policy.md").read_text()
-        example = escalation.split("## Counting example", 1)[1]
+        example = escalation.split("## No-override default counting example", 1)[1].split(
+            "## Override counting example", 1
+        )[0]
 
         for contract in (
-            "This Balanced-mode example has separate design evidence",
+            "This example uses the Balanced no-override defaults and has separate design evidence",
             "settled shared-propagation assumption is false",
             "no local patch within the approved scope can satisfy both acceptance criteria",
             "The repeated fingerprint establishes material similarity only; it does not authorize recovery",
-            "enters the still-unused single High recovery diagnostician",
+            "enters the still-unused recovery diagnostician",
         ):
             self.assertIn(contract, example)
 
@@ -134,13 +263,13 @@ class ReferenceTests(unittest.TestCase):
         self.assertIn("| Fresh debugger | medium | medium | high |", routing)
         for text in (skill, escalation, integration):
             self.assertIn("single fresh debugger stage", text)
-            self.assertIn("Medium in Fast/Balanced and High in Deep", text)
+            self.assertIn("`profile.debugger`", text)
             self.assertIn("If that debugger stage was already consumed", text)
-            self.assertIn("Fast stops automatic handling and reports the failed review gate", text)
-            self.assertIn("Balanced and Deep may use the still-unused single recovery diagnostician", text)
+            self.assertIn("`profile.recovery`", text)
+            self.assertIn("`profile.recovery_explicitly_requested`", text)
             self.assertIn("still-unused single recovery diagnostician", text)
             self.assertIn("Only the recovery diagnostician requires contract/design evidence", text)
-            self.assertIn("High effort alone does not make a debugger a recovery", text)
+            self.assertRegex(text, r"(?:High effort alone does not make|Equal effort does not merge|different roles even when their resolved efforts match)")
             self.assertIn("never repeat the debugger or restart the ladder", text)
 
         visible_trace = skill.split("## Visible trace", 1)[1].split("## Setup check", 1)[0]
@@ -155,16 +284,16 @@ class ReferenceTests(unittest.TestCase):
         self.assertNotIn("fresh medium debugger", visible_trace.lower())
         self.assertNotIn("low repair failed", visible_trace.lower())
         self.assertIn(
-            "- debugger: route=<actual-mode-routed-effort>/fresh · mode=<mode> · <outcome>",
+            "- debugger: route=<profile.debugger>/fresh · mode=<mode> · <outcome>",
             stop_report,
         )
         self.assertIn(
-            "- recovery diagnostician: route=high/fresh · <outcome|not-used>",
+            "- recovery diagnostician: route=<profile.recovery>/fresh · <outcome|not-used>",
             stop_report,
         )
         self.assertNotIn("- medium debugger:", stop_report.lower())
         self.assertIn(
-            "A Deep debugger-to-recovery transition dispatches the recovery role without an `escalate` event or escalation-count increment",
+            "Compare the actual resolved efforts before recording an `escalate` event",
             escalation,
         )
 

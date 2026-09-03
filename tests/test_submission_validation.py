@@ -1,14 +1,22 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import shlex
 import shutil
 import subprocess
 import tempfile
 import unittest
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+POLICY_PATH = ROOT / "plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py"
+spec = importlib.util.spec_from_file_location("submission_adaptive_policy", POLICY_PATH)
+policy = importlib.util.module_from_spec(spec)
+assert spec and spec.loader
+sys.modules[spec.name] = policy
+spec.loader.exec_module(policy)
 
 
 class SubmissionValidationTests(unittest.TestCase):
@@ -72,7 +80,10 @@ class SubmissionValidationTests(unittest.TestCase):
             path.write_text(json.dumps(cases))
             result = self.run_validator(copy)
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("review case semantics", result.stdout.lower())
+            self.assertRegex(
+                result.stdout.lower(),
+                r"review case semantics|fixed-effort review case",
+            )
 
     def test_validator_rejects_route_semantic_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -85,6 +96,117 @@ class SubmissionValidationTests(unittest.TestCase):
             result = self.run_validator(copy)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("review case semantics", result.stdout.lower())
+
+    def test_validator_rejects_task_local_override_semantic_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            copy = self.copied_repo(directory)
+            path = copy / "submission/review-cases.json"
+            cases = json.loads(path.read_text())
+            override = next(
+                case for case in cases["positiveCases"]
+                if case["id"] == "task-local-effort-overrides"
+            )
+            override["expectedWorkflow"] = "Ignore the role assignments and use Fast defaults."
+            path.write_text(json.dumps(cases))
+            result = self.run_validator(copy)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("review case semantics", result.stdout.lower())
+
+    def test_task_local_override_review_fixture_is_executable_policy_input(self) -> None:
+        fixture = json.loads(
+            (ROOT / "submission/fixtures/task-local-effort-overrides.json").read_text()
+        )
+        for route in fixture["routes"]:
+            with self.subTest(route=route["name"]):
+                result = subprocess.run(
+                    [
+                        "python3",
+                        "plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py",
+                        "--mode", fixture["mode"],
+                        "--role", route["role"],
+                        "--risk", route.get("risk", "routine"),
+                        *[
+                            item
+                            for assignment in fixture["effortAssignments"]
+                            for item in ("--effort", assignment)
+                        ],
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(
+                    json.loads(result.stdout)["reasoning_effort"],
+                    route["expectedEffort"],
+                )
+        assignments = {
+            key.replace("-", "_"): effort
+            for key, effort in (
+                assignment.split("=", 1)
+                for assignment in fixture["effortAssignments"]
+            )
+        }
+        overrides = policy.EffortOverrides(**assignments)
+        for repair in fixture["repairs"]:
+            writer = policy.route(
+                fixture["mode"], repair["currentWriterRole"],
+                effort_overrides=overrides,
+            )
+            self.assertEqual(repair["expectedEffort"], policy.repair_effort(writer))
+
+        conflict = fixture["conflictingInput"]
+        cap_role, cap_effort = conflict["cap"].split("=", 1)
+        conflicting_role, conflicting_effort = conflict["assignment"].split("=", 1)
+        with self.assertRaisesRegex(ValueError, conflict["expectedError"]):
+            policy.validate_effort_caps(
+                policy.EffortOverrides(**{conflicting_role: conflicting_effort}),
+                policy.EffortOverrides(**{cap_role: cap_effort}),
+            )
+
+        recovery = fixture["fastRecovery"]
+        without_evidence = policy.failure_route(
+            "contract/design defect", mode="fast", effort_overrides=overrides
+        )
+        with_evidence = policy.failure_route(
+            "contract/design defect", mode="fast",
+            independent_contract_design_evidence=True,
+            effort_overrides=overrides,
+        )
+        self.assertEqual(without_evidence, recovery["withoutEvidence"])
+        self.assertEqual(with_evidence, recovery["withEvidence"])
+
+    def test_fixed_effort_review_cases_are_labeled_no_override_examples(self) -> None:
+        cases = json.loads((ROOT / "submission/review-cases.json").read_text())
+        by_id = {case["id"]: case for case in cases["positiveCases"]}
+        for case_id in (
+            "balanced-default",
+            "deep-default",
+            "semantic-repair",
+            "planned-review",
+        ):
+            with self.subTest(case_id=case_id):
+                serialized = " ".join(str(value) for value in by_id[case_id].values())
+                self.assertIn("no role assignments", serialized.lower())
+
+    def test_validator_rejects_unlabeled_fixed_effort_review_case(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            copy = self.copied_repo(directory)
+            path = copy / "submission/review-cases.json"
+            cases = json.loads(path.read_text())
+            semantic_repair = next(
+                case for case in cases["positiveCases"]
+                if case["id"] == "semantic-repair"
+            )
+            semantic_repair["scenario"] = semantic_repair["scenario"].replace(
+                " with no role assignments", ""
+            )
+            path.write_text(json.dumps(cases))
+            result = self.run_validator(copy)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("fixed-effort review case", result.stdout.lower())
 
     def test_repair_and_debugger_cases_run_the_public_failure_fixture(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -135,11 +257,11 @@ class SubmissionValidationTests(unittest.TestCase):
     def test_validator_rejects_stale_mode_guidance_outside_main_tables(self) -> None:
         mutations = {
             "DESIGN.md": (
-                "Implementation starts at Low in Fast and Balanced; Deep implementation starts at Medium.",
-                "Every implementation starts at Low.",
+                "A broader implementation failure gets one fresh debugger at `profile.debugger`.",
+                "Every implementation failure starts a Medium debugger.",
             ),
             "docs/design.md": (
-                "reasoning effort:  Medium in Fast/Balanced; High in Deep",
+                "reasoning effort:  profile.debugger",
                 "reasoning effort:  Medium",
             ),
             "plugins/adaptive-effort/skills/adaptive-effort/references/handoff-templates.md": (
@@ -155,6 +277,28 @@ class SubmissionValidationTests(unittest.TestCase):
                 result = self.run_validator(copy)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("routing guidance", result.stdout.lower())
+
+    def test_validator_audits_every_maintained_routing_policy_consumer(self) -> None:
+        consumers = (
+            "README.md",
+            "DESIGN.md",
+            "docs/design.md",
+            "TEST_DRIVE.md",
+            "plugins/adaptive-effort/README.md",
+            "plugins/adaptive-effort/skills/adaptive-effort/SKILL.md",
+            "plugins/adaptive-effort/skills/adaptive-effort/references/routing-policy.md",
+            "plugins/adaptive-effort/skills/adaptive-effort/references/escalation-policy.md",
+            "plugins/adaptive-effort/skills/adaptive-effort/references/superpowers-integration.md",
+        )
+        stale_instruction = "Action: start a fresh debugger at medium effort, or high in deep mode."
+        for relative in consumers:
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as directory:
+                copy = self.copied_repo(directory)
+                path = copy / relative
+                path.write_text(path.read_text() + f"\n\n{stale_instruction}\n")
+                result = self.run_validator(copy)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("routing policy consumer", result.stdout.lower())
 
     def test_validator_rejects_recovery_authorization_disagreement(self) -> None:
         mutations = {

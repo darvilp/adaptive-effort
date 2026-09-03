@@ -2,6 +2,8 @@
 
 Use a fresh Codex app or CLI session with Superpowers and Adaptive Effort installed. Codex IDE extensions do not currently support plugins.
 
+The mode matrix contains the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
+
 ## 1. Setup check
 
 Prompt:
@@ -47,7 +49,7 @@ Confirm each mode selects its initial implementation effort directly, without as
 
 ## 2. Straight-through Balanced task
 
-Choose a small repository task with an existing test runner:
+Choose a small repository task with an existing test runner. Do not supply role assignments, so this test uses the Balanced no-override defaults:
 
 ```text
 Add a retry option to this client. Preserve the public API defaults.
@@ -74,9 +76,11 @@ Confirm:
 
 ## 2b. Mode differentiation
 
-Repeat a routine task in Fast. Confirm implementation and routine spec and quality reviews use Low, a debugger uses Medium if needed, and automatic handling stops before High recovery even when contract/design evidence is present. Confirm required reviews still run and a high-risk review still uses High.
+Repeat a routine task in Fast without role assignments. Confirm the resolved profile matches the Fast no-override defaults. Confirm required reviews still run.
 
-Repeat a simple task in Deep. Confirm the implementer starts at Medium, its same-thread repair retains Medium, and routine reviews and debugging use High. Confirm no work category is assigned before dispatch.
+Repeat a simple task in Deep without role assignments. Confirm the resolved profile matches the Deep no-override defaults. Confirm no work category is assigned before dispatch.
+
+Repeat with non-default assignments for all five roles. Confirm each dispatch uses its `profile` field, routine and high-risk reviews use their separate fields, and each repair retains the actual writer route. In Fast, confirm recovery stops unless both explicit recovery provenance and independent contract/design evidence are present.
 
 ## 2c. Planned high review
 
@@ -86,39 +90,39 @@ Use a Superpowers-selected high-risk review after straight-through implementatio
 
 Use a fixture or temporary branch where the first implementation is likely to produce a simple deterministic failure.
 
-Expected:
+Expected with the Balanced no-override defaults:
 
 ```text
-low implementer
+profile.implementer
 → exact test failure
-→ one follow-up to the same low thread
+→ one follow-up to the same thread at the actual writer route
 → pass
 ```
 
 Confirm no fresh debugger was spawned after the successful repair.
 
-## 4. Balanced debugger escalation
+## 4. Balanced no-override debugger example
 
 Create a task whose behavior crosses two modules, or temporarily add an acceptance test that catches a non-local interaction.
 
-Expected:
+Expected with no role assignments:
 
 ```text
-low implementer
-→ low repair fails
-→ fresh medium debugger
+profile.implementer
+→ same-thread repair fails
+→ fresh profile.debugger
 → verification
 ```
 
 Confirm the debugger received the contract, diff, and failure evidence, but not the first worker's reasoning transcript.
 
-Confirm the Low to Medium transition increments the escalation count to one.
+Compare the actual implementer and debugger efforts. Confirm the escalation count increments only when the debugger effort is higher.
 
 Confirm the first classified failure wrote its fingerprint beside the failing result before repair or escalation, and the escalation reused that exact value.
 
 ## 4b. Two true escalations across boundaries
 
-Use a disposable Balanced-mode fixture where the same behavior and invariant fail first at one Superpowers-defined boundary, then at another. Before recovery, establish separate deterministic design evidence that the approved API and CLI propagation assumption is false and no local in-scope patch can satisfy both acceptance criteria. Confirm Low to Medium and Medium to High count as two escalations. Confirm the boundary change does not make the repeated semantic failure unrelated, but the repeated fingerprint alone never authorizes recovery. Repeat without contract/design evidence after the debugger is spent and confirm automatic handling stops instead of entering recovery.
+Use a disposable Balanced-mode fixture with no role assignments where the same behavior and invariant fail first at one Superpowers-defined boundary, then at another. Before recovery, establish separate deterministic design evidence that the approved API and CLI propagation assumption is false and no local in-scope patch can satisfy both acceptance criteria. Compare actual resolved efforts and confirm both increases count as escalations. Confirm the boundary change does not make the repeated semantic failure unrelated, but the repeated fingerprint alone never authorizes recovery. Repeat without contract/design evidence after the debugger is spent and confirm automatic handling stops instead of entering recovery.
 
 ## 4c. Mechanical correction
 
@@ -136,11 +140,11 @@ Mark another Superpowers-defined boundary deferred. Confirm its result remains `
 
 ## 4e. Review correction accounting
 
-Use the semantic same-thread correction during pre-review verification, then introduce a local finding at a required Superpowers review. In Fast or Balanced, confirm the implementation reasoning defect uses the single fresh debugger at Medium when that stage remains unused. Repeat in Deep and confirm the same debugger role runs at High without becoming recovery. The visible trace must report `role=debugger`, the actual route, and the mode. Then reproduce the review failure after the debugger stage has already been consumed. Confirm Fast stops automatic handling and reports the failed review gate. Confirm Balanced or Deep enters recovery only when independent contract/design evidence justifies it. When Deep enters recovery, confirm it emits a separate High recovery dispatch without a High-to-High `escalate` event or escalation-count increment. Confirm the stop report lists debugger and recovery separately, the debugger never repeats, and the ladder never restarts.
+Use the semantic same-thread correction during pre-review verification, then introduce a local finding at a required Superpowers review. Confirm the implementation reasoning defect uses the single fresh debugger at `profile.debugger` when that stage remains unused. The visible trace must report `role=debugger`, the actual route, and the mode. Then reproduce the review failure after the debugger stage has already been consumed. Confirm recovery uses `profile.recovery` only with independent contract/design evidence. In Fast, also require `profile.recovery_explicitly_requested`. Compare the actual debugger and recovery efforts before expecting an `escalate` event. Confirm the stop report lists debugger and recovery separately, the debugger never repeats, and the ladder never restarts.
 
 ## 5. Design conflict
 
-Use Balanced mode with mutually incompatible acceptance criteria in a disposable test repository.
+Use Balanced mode with mutually incompatible acceptance criteria in a disposable test repository. Omit role assignments so the expected sequence uses the no-override defaults.
 
 Expected:
 

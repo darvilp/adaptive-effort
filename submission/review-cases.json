@@ -6,7 +6,7 @@
   "positiveCases": [
     {
       "id": "balanced-default",
-      "prompt": "Implement this approved Superpowers plan with balanced Adaptive Effort routing.",
+      "prompt": "Implement this approved Superpowers plan with balanced Adaptive Effort routing and no role assignments.",
       "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Install and verify Superpowers as described above, start a new Codex task at the checkout root, approve a one-file documentation plan, then send the exact prompt.",
       "expectedWorkflow": "Dispatch one fresh inherited-model Low implementer.",
       "expectedResult": "A compact dispatch/result trace separates worker status from the downstream gate.",
@@ -14,7 +14,7 @@
     },
     {
       "id": "deep-default",
-      "prompt": "Implement this approved Superpowers plan with deep Adaptive Effort routing.",
+      "prompt": "Implement this approved Superpowers plan with deep Adaptive Effort routing and no role assignments.",
       "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify Superpowers, start a new Codex task, approve a one-file documentation plan, then send the exact prompt.",
       "expectedWorkflow": "Dispatch a fresh inherited-model Medium implementer without assigning a preliminary work category.",
       "expectedResult": "The compact trace records the Deep Medium implementation route and the plan-owned boundary.",
@@ -22,7 +22,7 @@
     },
     {
       "id": "semantic-repair",
-      "scenario": "After the Low implementer reports, run the checked-in local deterministic defect fixture once and return its exact classified output to the original worker.",
+      "scenario": "In this Balanced example with no role assignments, after the Low implementer reports, run the checked-in local deterministic defect fixture once and return its exact classified output to the original worker.",
       "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify Superpowers, start a new Codex task, approve a test-first plan, and use the checked-in submission/fixtures/local-deterministic-defect.json fixture.",
       "evidenceInjection": {
         "command": "python3 scripts/review_case_fixture.py submission/fixtures/local-deterministic-defect.json",
@@ -57,11 +57,19 @@
     },
     {
       "id": "planned-review",
-      "scenario": "Complete an approved plan in Fast mode and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
+      "scenario": "Complete an approved plan in Fast mode with no role assignments and allow Superpowers to run specification review followed by code-quality review without injecting a worker failure.",
       "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify the requesting-code-review SKILL.md entrypoint, start a new Codex task, approve a small documentation plan, and retain the initial escalation count for comparison after both reviews.",
       "expectedWorkflow": "Use Low for both routine reviews without counting either as an escalation; correct and re-review any finding through the Superpowers workflow.",
       "expectedResult": "Worker status remains separate from each downstream review gate and the escalation count is unchanged.",
       "rationale": "Fast lowers routine review effort without removing the workflow gates."
+    },
+    {
+      "id": "task-local-effort-overrides",
+      "prompt": "Use Fast handling with effort implementer=medium routine-review=high high-risk-review=low debugger=xhigh recovery=max for this approved Superpowers task.",
+      "publicSetup": "Clone https://github.com/darvilp/adaptive-effort and check out public main. Verify that plugins/adaptive-effort/.codex-plugin/plugin.json reports version 0.1.3. Verify Superpowers, start a new Codex task, approve a small implementation plan, and keep submission/fixtures/task-local-effort-overrides.json unchanged.",
+      "expectedWorkflow": "Apply the five explicit role values over Fast defaults, retain worker effort for repairs, and check host/model compatibility before each dispatch when available.",
+      "expectedResult": "The initial trace lists the canonical task-local overrides; High-risk review uses Low, and Fast recovery at Max still requires independent contract/design evidence.",
+      "rationale": "Explicit task-local role values take precedence without changing repair identity, compatibility checks, or recovery authorization."
     }
   ],
   "negativeCases": [

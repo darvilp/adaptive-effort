@@ -25,6 +25,8 @@ Adaptive Effort owns:
 
 Explicit user instructions outrank both. Superpowers workflow requirements outrank Adaptive Effort cost preferences.
 
+The mode matrix contains the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
+
 ## Where to apply
 
 Apply Adaptive Effort when Superpowers is about to dispatch:
@@ -61,7 +63,7 @@ The parent or an independent review step should ensure the implementer did not w
 
 ## Reviews
 
-Superpowers decides which reviewers are mandatory. Adaptive Effort assigns Low, Medium, or High effort to routine review in Fast, Balanced, or Deep respectively. High-risk review always uses High.
+Superpowers decides which reviewers are mandatory. Use `profile.routine_review` for routine review and `profile.high_risk_review` for high-risk review.
 
 A planned medium or high reviewer is not an escalation. Only a corrective transition from lower to higher effort after classified failure increments the escalation count.
 
@@ -69,10 +71,10 @@ If a reviewer finds an implementation defect:
 
 - use the one semantic same-thread correction shared across pre-review verification and all Superpowers review stages when it remains unused; a local review correction consumes it
 - re-run the same reviewer as Superpowers requires
-- If the allowance is already consumed, classify the failure; for an implementation reasoning defect, use the single fresh debugger stage only if it remains unused, routed at Medium in Fast/Balanced and High in Deep
-- If that debugger stage was already consumed, Fast stops automatic handling and reports the failed review gate
-- Balanced and Deep may use the still-unused single recovery diagnostician only when independent contract/design evidence justifies it
-- Only the recovery diagnostician requires contract/design evidence; High effort alone does not make a debugger a recovery, because Deep routes its debugger at High
+- If the allowance is already consumed, classify the failure. For an implementation reasoning defect, use the single fresh debugger stage at `profile.debugger` only if it remains unused.
+- If that debugger stage was already consumed, use the still-unused single recovery diagnostician at `profile.recovery` only when independent contract/design evidence justifies it.
+- In Fast, recovery also requires `profile.recovery_explicitly_requested`.
+- Only the recovery diagnostician requires contract/design evidence. A debugger and a recovery agent remain different roles even when their resolved efforts match.
 
 Never skip the required review, and never repeat the debugger or restart the ladder. Re-run the same reviewer after the corrective route completes.
 

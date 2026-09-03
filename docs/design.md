@@ -19,6 +19,8 @@ Adaptive Effort owns one narrower decision:
 
 > Given the agent role and the evidence available, how much reasoning effort should the next Codex agent receive?
 
+The mode matrix contains the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
+
 The intended pattern is:
 
 ```text
@@ -380,7 +382,7 @@ Configuration:
 
 ```text
 model:             inherit
-reasoning effort:  Low in Fast/Balanced; Medium in Deep
+reasoning effort:  profile.implementer
 context:           fresh / compact
 write access:      yes
 ```
@@ -402,7 +404,7 @@ Configuration:
 
 ```text
 model:             inherit
-reasoning effort:  Medium in Fast/Balanced; High in Deep
+reasoning effort:  profile.debugger
 context:           fresh / compact
 write access:      yes
 ```
@@ -423,7 +425,7 @@ Configuration:
 
 ```text
 model:             inherit
-reasoning effort:  High
+reasoning effort:  profile.recovery
 context:           fresh / compact
 write access:      constrained where practical
 ```
@@ -449,14 +451,11 @@ return to planning
 
 Superpowers owns review timing and review requirements.
 
-Adaptive Effort may supply reasoning-effort policy for reviewers:
+Adaptive Effort supplies the resolved review effort:
 
 ```text
-Fast routine review             Low
-Balanced routine review         Medium
-Deep routine review             High
-high-risk review                 High
-architectural challenge          High
+routine review                  profile.routine_review
+high-risk review                profile.high_risk_review
 ```
 
 It does not create an independent review lifecycle.
@@ -530,8 +529,7 @@ Parent with large architecture context
                  │
                  └── diff + failures
                            ↓
-                    Mode-routed debugger
-                 Medium Fast/Balanced, High Deep
+                    profile.debugger
 ```
 
 Avoid propagating the full parent transcript through every child.
@@ -546,9 +544,7 @@ Fresh context provides both token savings and an independent reasoning path.
 SUPERPOWERS TASK READY
           │
           ▼
-    IMPLEMENTER
- LOW FAST/BALANCED
-     MEDIUM DEEP
+    profile.implementer
           │
       verification
        /        \
@@ -562,19 +558,15 @@ workflow          │
             PASS       FAIL
              │           │
              ▼           ▼
-          continue    FRESH DEBUGGER
-                    MEDIUM FAST/BALANCED
-                         HIGH DEEP
+          continue    FRESH profile.debugger
                           │
                       verification
                        /       \
                     PASS       FAIL
                      │           │
                      ▼           ▼
-                  continue   FAST: STOP
-                             BALANCED/DEEP:
-                             EVIDENCE-GATED
-                             HIGH RECOVERY
+                  continue   AUTHORIZATION GATE
+                             profile.recovery
                                 │
                     ┌───────────┴───────────┐
                     ▼                       ▼
@@ -609,7 +601,7 @@ Observed 4 attempts.
 Correct the implementation while preserving the approved contract.
 ```
 
-If the correction still fails, or a later local review finding occurs after the allowance is consumed, classify the failure. An implementation reasoning defect uses the one debugger stage if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that stage was already consumed, Fast stops automatic handling and reports the failed review gate. Balanced and Deep may use the still-unused recovery diagnostician only when independent contract/design evidence justifies it. A Deep debugger is High because of its mode, not because it is recovery. Required reviews still run, and the ladder never repeats or restarts.
+If the correction still fails, or a later local review finding occurs after the allowance is consumed, classify the failure. An implementation reasoning defect uses the one debugger stage at `profile.debugger` if it remains unused. Recovery uses `profile.recovery` only when independent contract/design evidence justifies it. Fast also requires `profile.recovery_explicitly_requested`. Required reviews still run, and the ladder never repeats or restarts.
 
 A deterministic hygiene failure may receive one separate same-thread mechanical correction on the thread that produced the current diff. It requires exact targets and transformation, comparison against the last semantically accepted diff, a semantic-equivalence command and result, and a rerun of the failed hygiene gate. A second mechanical correction stops automatic handling without raising effort.
 
@@ -629,7 +621,7 @@ Use the one mode-routed debugger stage when:
 - repository behavior differs from implementation assumptions
 - broader control-flow or data-flow analysis is required
 
-In Fast and Balanced, moving from a Low worker to the Medium debugger is one corrective upward effort transition. Deep moves from a Medium implementer to a High debugger.
+Compare the implementer's actual resolved effort with `profile.debugger`. Count one corrective upward transition only when the debugger effort is higher.
 
 ### Debugger to recovery
 
@@ -641,7 +633,7 @@ Enter recovery only when independent contract or design evidence shows one of th
 - testing exposes an unstated invariant
 - the debugger determines that the plan itself may be wrong
 
-Repeated verification failure or a repeated fingerprint alone does not authorize recovery. Fast stops before automatic High recovery. In Balanced, the Medium debugger to High recovery move is a counted upward effort transition. In Deep, dispatch the separate High recovery role without an `escalate` event or count increase because the debugger already ran at High.
+Repeated verification failure or a repeated fingerprint alone does not authorize recovery. Independent contract/design evidence is always required. Fast also requires `profile.recovery_explicitly_requested`. Compare `profile.debugger` with `profile.recovery`, and count an escalation only when the recovery effort is higher.
 
 ### Do not escalate reasoning for
 
@@ -663,15 +655,15 @@ Adaptive Effort carries only boundaries selected by Superpowers. An adjacent `bo
 
 ## 18. Circuit breakers
 
-Default limits:
+These stage limits apply to every resolved profile:
 
 ```text
-Implementation attempts:      1, Low Fast/Balanced or Medium Deep
+Implementation attempts:      1, profile.implementer
 Same-effort repair attempts:  1
 Mechanical corrections:      1, separate
 Context continuations:        1 per worker dispatch, separate
-Debugger attempts:            1, Medium Fast/Balanced or High Deep
-Recovery attempts:            0 Fast; 1 High in Balanced/Deep
+Debugger attempts:            1, profile.debugger
+Recovery attempts:            1 when the authorization gate passes, profile.recovery
 ```
 
 When the ladder is exhausted, automatic execution stops.
@@ -684,8 +676,8 @@ Implementation unresolved.
 Attempts:
 - implementation: route=<actual-effort>/<context> · failed X
 - semantic correction: route=<retained-effort>/same-thread · failed Y
-- debugger: route=<actual-mode-routed-effort>/fresh · mode=<mode> · identified Z
-- recovery diagnostician: route=high/fresh · contract likely conflicts with A
+- debugger: route=<profile.debugger>/fresh · mode=<mode> · identified Z
+- recovery diagnostician: route=<profile.recovery>/fresh · contract likely conflicts with A
 
 Recommended action:
 Return to planning and revisit assumption B.
@@ -697,9 +689,9 @@ The parent records a compact closeout with gate status, true escalation count, a
 
 ---
 
-## 19. Orchestration modes
+## 19. No-override default orchestration modes
 
-Modes control Adaptive Effort behavior only. They never modify the active parent model or parent effort.
+These examples show the no-override defaults. Modes control Adaptive Effort behavior only. They never modify the active parent model or parent effort.
 
 ### Fast
 
@@ -737,7 +729,7 @@ Routine review    High
 Verification       broad
 ```
 
-Implementation effort follows the selected mode directly. Adaptive Effort does not require an upfront work category.
+Explicit role assignments replace the corresponding values above. Adaptive Effort does not require an upfront work category.
 
 XHigh and Max are outside the automatic routing policy.
 
@@ -767,18 +759,20 @@ Normal development should not require manually naming worker agents.
 
 ## 21. Configuration
 
-The default policy should remain small:
+This example shows the Balanced no-override defaults:
 
 ```text
 mode = balanced
 
 implementer_effort = low
+routine_review_effort = medium
+high_risk_review_effort = high
 debugger_effort = medium
 recovery_effort = high
 
-low_repairs = 1
-medium_debuggers = 1
-high_recoveries = 1
+semantic_repairs = 1
+debugger_attempts = 1
+authorized_recoveries = 1
 ```
 
 The plugin should not require global Codex configuration changes for its own policy.
@@ -993,20 +987,20 @@ Verify:
 Test:
 
 ```text
-Low succeeds
+No-override Low succeeds
 → no escalation
 
-Low fails, Low repair succeeds
+No-override Low fails, repair succeeds at the actual writer route
 → no Medium
 
-Low + repair fail
-→ fresh mode-routed debugger
+Implementation and repair fail
+→ fresh profile.debugger
 
-Balanced/Deep debugger and independent contract/design evidence identify a contract/design problem
-→ High recovery role
+Debugger and independent contract/design evidence identify a contract/design problem
+→ profile.recovery when the mode-specific provenance gate also passes
 
-Fast debugger is spent, even with contract/design evidence
-→ no automatic High recovery; stop
+Fast debugger is spent without explicit recovery provenance
+→ no recovery; stop
 
 Repeated fingerprint without contract/design evidence
 → no recovery; stop when the debugger is spent
@@ -1017,7 +1011,7 @@ Environment failure
 Planned High review
 → zero escalation count
 
-Low → Medium → High corrective transitions
+Actual resolved efforts rise twice across corrective transitions
 → two escalations even across different boundaries
 
 Mechanical correction succeeds
@@ -1103,10 +1097,10 @@ A. Superpowers
 
 B. Superpowers + Adaptive Effort
    Parent Sol / High
-   implementation Low in Fast/Balanced; Medium in Deep
-   repair retains implementation effort
-   debugger Medium in Fast/Balanced; High in Deep
-   recovery explicit-only in Fast; evidence-gated High in Balanced/Deep
+   implementation profile.implementer
+   repair retains the actual writer route
+   debugger profile.debugger
+   recovery profile.recovery after the authorization gate
 ```
 
 Observe when the host exposes aggregate data:
@@ -1136,9 +1130,9 @@ The plugin snapshot contains:
 - Git marketplace manifest
 - Superpowers dependency detection
 - one implicit Adaptive Effort skill
-- mode-routed implementer, Low in Fast/Balanced and Medium in Deep
-- mode-routed debugger, Medium in Fast/Balanced and High in Deep
-- evidence-gated High recovery diagnostician in Balanced/Deep; no automatic recovery in Fast
+- task-local `profile.implementer`, `profile.routine_review`, `profile.high_risk_review`, `profile.debugger`, and `profile.recovery` routes
+- Fast recovery provenance through `profile.recovery_explicitly_requested`
+- evidence-gated recovery in every mode
 - inherited child model
 - fresh-context handoff policy
 - one same-effort repair

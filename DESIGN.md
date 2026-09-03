@@ -8,12 +8,14 @@ Adaptive Effort augments Superpowers with a compute policy. Superpowers decides 
 
 ## Core rules
 
+The fixed values below are the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
+
 1. Parent model and effort remain user-selected.
 2. Child model is inherited.
-3. Implementation starts at Low in Fast and Balanced; Deep implementation starts at Medium.
-4. One local failure gets one same-thread repair at the existing worker's effort.
-5. Broader implementation failure gets a fresh Medium debugger in Fast/Balanced or High debugger in Deep.
-6. Independent contract or architecture evidence can authorize one fresh High recovery diagnosis in Balanced/Deep; Fast stops before automatic recovery.
+3. No-override implementation uses Low in Fast and Balanced and Medium in Deep.
+4. One local failure gets one same-thread repair at the actual writer route.
+5. A broader implementation failure gets one fresh debugger at `profile.debugger`.
+6. Recovery uses `profile.recovery` only with independent contract/design evidence. Fast also requires explicit recovery provenance.
 7. Environment failures do not trigger more reasoning.
 8. Child handoffs are compact and fresh.
 9. Superpowers quality gates remain intact.

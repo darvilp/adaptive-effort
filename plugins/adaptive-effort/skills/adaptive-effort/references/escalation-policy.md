@@ -2,6 +2,8 @@
 
 Escalate only after classifying evidence. Time spent, token count, or the mere fact that a task is difficult are not enough.
 
+The mode matrix contains the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
+
 Only corrective upward effort transitions count as escalations. An initial route and planned medium/high reviews do not. Every classified semantic failure records a fingerprint with behavior, boundary, and invariant fields adjacent to the failing result and before correction or escalation. An escalation reuses the same fingerprint. The same behavior and invariant recurring across different boundaries is materially similar; the boundary locates the evidence but does not make the failure new.
 
 ## Failure classes
@@ -56,7 +58,7 @@ Examples:
 - the first repair fixes one symptom but creates another
 - the implementer reports BLOCKED because the local approach is unclear
 
-Action: start a fresh debugger at medium effort, or high in deep mode.
+Action: start the single fresh debugger at `profile.debugger`.
 
 ### Contract or design defect
 
@@ -69,11 +71,11 @@ Examples:
 - no local patch can satisfy all acceptance criteria
 - the debugger concludes the plan is wrong
 
-Action: stop automatic handling in Fast. In Balanced or Deep, start one high-effort recovery diagnostician. Its first task is to decide whether a bounded repair is safe or planning must resume.
+Action: require independent contract/design evidence, then start the single recovery diagnostician at `profile.recovery`. In Fast, also require `profile.recovery_explicitly_requested`; otherwise stop automatic handling. The recovery agent first decides whether a bounded repair is safe or planning must resume.
 
 ## Circuit breaker
 
-Default per implementation task:
+The stage counts below apply to every resolved profile:
 
 | Stage | Limit |
 |---|---:|
@@ -82,11 +84,11 @@ Default per implementation task:
 | Same-thread local repair, the semantic correction | 1 across verification and all review stages |
 | Same-thread mechanical correction | 1, separate from semantic repair |
 | Fresh debugger | 1 |
-| High recovery diagnostician | 0 in Fast; 1 in Balanced/Deep |
+| Recovery diagnostician | 1 when the recovery authorization gate passes |
 
-Reviews remain governed by Superpowers, but Adaptive Effort must not turn review findings into an unbounded fix/re-review loop. The one semantic same-thread correction covers pre-review verification and all Superpowers review stages; a local review correction consumes it. If the allowance is already consumed, classify the failure. For an implementation reasoning defect, use the single fresh debugger stage only if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that debugger stage was already consumed, Fast stops automatic handling and reports the failed review gate. Balanced and Deep may use the still-unused single recovery diagnostician only when independent contract/design evidence justifies it. Only the recovery diagnostician requires contract/design evidence. High effort alone does not make a debugger a recovery, because Deep routes its debugger at High. Keep the required review gate, and never repeat the debugger or restart the ladder.
+Reviews remain governed by Superpowers, but Adaptive Effort must not turn review findings into an unbounded fix/re-review loop. The one semantic same-thread correction covers pre-review verification and all Superpowers review stages; a local review correction consumes it. If the allowance is already consumed, classify the failure. For an implementation reasoning defect, use the single fresh debugger stage at `profile.debugger` only if it remains unused. If that debugger stage was already consumed, use the still-unused single recovery diagnostician at `profile.recovery` only when independent contract/design evidence justifies it. Fast also requires `profile.recovery_explicitly_requested`; otherwise it reports the failed review gate. Only the recovery diagnostician requires contract/design evidence. Equal effort does not merge the debugger and recovery roles. Keep the required review gate, and never repeat the debugger or restart the ladder.
 
-A Deep debugger-to-recovery transition dispatches the recovery role without an `escalate` event or escalation-count increment. Both roles use High effort in Deep, so recovery changes the role and fresh context but does not make a corrective upward effort transition. Fast has no automatic recovery transition.
+Compare the actual resolved efforts before recording an `escalate` event. Dispatching recovery changes the role and fresh context, but it increments the escalation count only when `profile.recovery` is higher than `profile.debugger`.
 
 ## Stop report
 
@@ -104,8 +106,8 @@ Evidence:
 Attempts:
 - implementation: route=<actual-effort>/<context> · <outcome>
 - semantic correction: route=<retained-effort>/same-thread · <outcome>
-- debugger: route=<actual-mode-routed-effort>/fresh · mode=<mode> · <outcome>
-- recovery diagnostician: route=high/fresh · <outcome|not-used>
+- debugger: route=<profile.debugger>/fresh · mode=<mode> · <outcome>
+- recovery diagnostician: route=<profile.recovery>/fresh · <outcome|not-used>
 
 Classification:
 <environment | context | implementation | design>
@@ -116,9 +118,9 @@ Recommended next action:
 
 Never silently restart the ladder.
 
-## Counting example
+## No-override default counting example
 
-This Balanced-mode example has separate design evidence. The approved contract requires the implementation to pass effective project configuration to `inspect` through both the API and CLI entry points. The debugger result and deterministic gate evidence establish that the settled shared-propagation assumption is false and that no local patch within the approved scope can satisfy both acceptance criteria. Classify that contradiction as design. The repeated fingerprint establishes material similarity only; it does not authorize recovery. The Medium-to-High transition enters the still-unused single High recovery diagnostician.
+This example uses the Balanced no-override defaults and has separate design evidence. The approved contract requires the implementation to pass effective project configuration to `inspect` through both the API and CLI entry points. The debugger result and deterministic gate evidence establish that the settled shared-propagation assumption is false and that no local patch within the approved scope can satisfy both acceptance criteria. Classify that contradiction as design. The repeated fingerprint establishes material similarity only; it does not authorize recovery. The resolved Medium-to-High transition enters the still-unused recovery diagnostician.
 
 The planned High review below is not an escalation. The two corrective upward transitions are:
 
@@ -137,3 +139,9 @@ closeout · gate=PASS · escalations=2 · stop=verification-passed
 ```
 
 The repeated behavior and invariant make the API and CLI failures materially similar despite their different boundaries. The separate design evidence, not that recurrence, authorizes recovery.
+
+## Override counting example
+
+Suppose a Fast task assigns `debugger=xhigh` and `recovery=max`. The debugger dispatch records `route=xhigh/fresh`. Recovery remains unavailable until both `profile.recovery_explicitly_requested` and independent contract/design evidence are present. When both gates pass, the recovery dispatch records `route=max/fresh`. The XHigh-to-Max transition increments the escalation count because Max is higher than XHigh.
+
+If the task instead assigns `debugger=max` and `recovery=high`, the authorized recovery dispatch does not increment the escalation count. The role changes, but the actual resolved effort decreases.

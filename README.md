@@ -2,7 +2,7 @@
 
 Adaptive Effort is a Codex plugin prepared for the Universal Plugins Directory, with a Git marketplace fallback for repository-backed installation.
 
-The user-selected parent model and effort stay untouched. Implementation starts at Low in Fast and Balanced and at Medium in Deep. Deterministic failures get one same-effort repair, and fresh higher-effort agents are used only when the selected mode and evidence warrant them.
+The user-selected parent model and effort stay untouched. Adaptive Effort resolves one task-local profile for delegated implementation, review, debugging, and recovery. Deterministic failures get one same-thread repair at the current writer's effort.
 
 ## What it changes
 
@@ -12,19 +12,21 @@ Superpowers
 
 Adaptive Effort
   parent unchanged
-  implementation: low in fast/balanced; medium in deep
-  local repair: same thread, once; retains its effort
-  debugger: mode-routed; medium in fast/balanced, high in deep
-  recovery diagnosis: high
+  implementation: profile.implementer
+  local repair: same thread, once; retains the actual writer route
+  debugger: profile.debugger
+  recovery diagnosis: profile.recovery, after authorization
   child model: inherited
   child context: fresh and compact
 ```
 
 It does not replace Superpowers or implement a separate development methodology.
 
-## Routing modes
+## No-override defaults
 
 Fast, Balanced, and Deep are task-local Adaptive Effort routing profiles. They do not change the user-selected parent model, parent reasoning effort, Codex speed mode, or Superpowers workflow.
+
+This matrix defines the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
 
 | Work being routed | Fast | Balanced | Deep |
 |---|---:|---:|---:|
@@ -36,15 +38,15 @@ Fast, Balanced, and Deep are task-local Adaptive Effort routing profiles. They d
 | High-risk review | High | High | High |
 | Recovery diagnostician | High only when explicitly requested; not automatic | High, only with independent contract/design evidence | High, only with independent contract/design evidence |
 
-Balanced is the default. Fast minimizes routine worker cost: implementation and routine reviews use Low, debugging uses Medium, and automatic handling stops before High recovery. Balanced keeps Low implementation, Medium routine reviews and debugging, and evidence-gated High recovery. Deep always starts implementation at Medium and routes debugging and routine reviews at High. The mode alone selects implementation effort; no upfront work category is required. Fast does not skip reviews or reduce acceptance gates, and high-risk review remains High in every mode.
+Balanced is the default. The table applies when the task has no role assignments. Assigned roles replace their table values, while unassigned roles keep them. No upfront work category is required. Fast does not skip reviews or reduce acceptance gates.
 
-A same-thread repair is not a new worker and retains the implementer's original effort. The separate one-shot mechanical correction also retains the current writer's effort and does not count as a reasoning escalation. Planned Medium or High reviewers are planned routes, not escalation events. Only corrective movement to a higher effort after a classified failure increments the escalation count. Adaptive Effort never automatically chooses `xhigh`, `max`, or `ultra`.
+A same-thread repair is not a new worker. It retains the effort of the implementer, debugger, or recovery agent that wrote the current diff. The separate one-shot mechanical correction also retains that actual writer route and does not count as a reasoning escalation. Planned reviewers are planned routes, not escalation events. Compare actual resolved efforts to count corrective upward transitions. Adaptive Effort never automatically chooses `xhigh`, `max`, or `ultra`.
 
 ## How it works with Superpowers
 
 1. The parent task coordinates the approved plan.
 2. Superpowers determines the plan tasks, execution boundaries, worker count, sequential versus parallel topology, and TDD requirements.
-3. A fresh implementer handles an approved plan task at the selected mode's effort.
+3. Resolve the task-local profile and dispatch a fresh implementer at `profile.implementer`.
 4. Superpowers runs specification review before code-quality review.
 5. Review findings are corrected and re-reviewed.
 6. Final verification uses fresh evidence before completion.

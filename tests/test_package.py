@@ -56,7 +56,7 @@ class PackageTests(unittest.TestCase):
     def test_manifest_is_skills_only_and_paths_exist(self) -> None:
         manifest = json.loads((PLUGIN / ".codex-plugin/plugin.json").read_text())
         self.assertEqual(manifest["name"], "adaptive-effort")
-        self.assertEqual(manifest["version"], "0.1.2")
+        self.assertEqual(manifest["version"], "0.1.3")
         self.assertEqual(manifest["skills"], "./skills/")
         self.assertNotIn("agents", manifest)
         for key in ("composerIcon", "logo"):
@@ -67,11 +67,13 @@ class PackageTests(unittest.TestCase):
         skill_files = list((PLUGIN / "skills").glob("*/SKILL.md"))
         self.assertEqual([p.parent.name for p in skill_files], ["adaptive-effort"])
 
-    def test_skill_keeps_parent_and_inherits_child_model(self) -> None:
+    def test_skill_keeps_parent_and_resolves_task_local_child_models(self) -> None:
         text = (PLUGIN / "skills/adaptive-effort/SKILL.md").read_text()
         self.assertIn("Do not alter the parent model", text)
-        self.assertIn("omit `model`", text)
+        self.assertIn("Set `model` to the exact resolved role override when present", text)
+        self.assertIn("Omit `model` when that role has no model override", text)
         self.assertIn('fork_turns="none"', text)
+        self.assertIn("scripts/routing_plan.py", text)
 
     def test_skill_agent_metadata_allows_implicit_invocation(self) -> None:
         text = (PLUGIN / "skills/adaptive-effort/agents/openai.yaml").read_text()

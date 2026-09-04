@@ -8,11 +8,11 @@ validate:
 
 package-source: validate test
 	mkdir -p dist
-	python3 scripts/package.py --output dist/adaptive-effort-source-0.1.2.zip
+	python3 scripts/package.py --output dist/adaptive-effort-source-0.1.3.zip
 
 package-submission: validate test
 	mkdir -p dist
-	python3 scripts/package_submission.py --output dist/adaptive-effort-plugin-0.1.2.zip
+	python3 scripts/package_submission.py --output dist/adaptive-effort-plugin-0.1.3.zip
 
 package: package-source package-submission
 

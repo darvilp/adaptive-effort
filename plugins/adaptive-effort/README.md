@@ -1,33 +1,35 @@
 # Adaptive Effort
 
-Adaptive Effort is a skills-only Codex plugin that adds reasoning-effort routing and bounded escalation to Superpowers implementation workflows.
+Adaptive Effort is a skills-only Codex plugin that adds task-local child model and reasoning-effort routing with bounded escalation to Superpowers implementation workflows.
 
-It keeps the parent model and effort selected by the user, then applies this Balanced default child ladder:
+It keeps the parent model and effort selected by the user. This example shows the Balanced no-override defaults:
 
 ```text
-low implementation
-  → one low repair
-  → fresh medium debugger
-  → fresh high recovery diagnosis
+profile.implementer
+  → one same-thread repair at the actual writer route
+  → fresh profile.debugger
+  → fresh profile.recovery after authorization
   → stop or return to planning
 ```
 
 Superpowers remains responsible for planning, TDD, reviews, and verification.
 
-## Routing modes
+## No-override defaults
+
+The matrix contains the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
 
 | Route | Fast | Balanced | Deep |
 |---|---:|---:|---:|
-| Bounded implementation | Low | Low | Low |
-| Genuine integration implementation | Low | Low | Medium |
+| Implementation | Low | Low | Medium |
 | Same-thread repair | Retains effort, once | Retains effort, once | Retains effort, once |
-| Fresh debugger and routine reviews | Medium | Medium | High |
+| Fresh debugger | Medium | Medium | High |
+| Routine spec and quality reviews | Low | Medium | High |
 | High-risk review | High | High | High |
-| Recovery diagnostician | High, only with independent contract/design evidence | High, only with independent contract/design evidence | High, only with independent contract/design evidence |
+| Recovery diagnostician | High only when explicitly requested; not automatic | High, only with independent contract/design evidence | High, only with independent contract/design evidence |
 
-Balanced is the default; Fast currently has the same defined routes and never weakens reviews or gates. Deep raises only genuine integration work, debugging, and routine reviews. Planned reviewers are not escalation events. Adaptive Effort never automatically chooses `xhigh`, `max`, or `ultra`.
+Balanced is the default. The matrix applies only to roles without explicit assignments. No upfront work classification is required. Required reviews still run. Planned reviewers are not escalation events. Adaptive Effort never automatically chooses `xhigh`, `max`, or `ultra`.
 
-Superpowers coordinates the approved plan, chooses tasks, boundaries, worker count and topology, and requires TDD. A fresh implementer handles each bounded task. Superpowers runs specification review before code-quality review; findings are corrected and re-reviewed before final verification. Adaptive Effort changes child effort and handoffs, classifies failures, and bounds correction and escalation. Worker count and aggregate usage are optional AAR observations, not routing inputs or per-agent accounting promises.
+Superpowers coordinates the approved plan, chooses tasks, boundaries, worker count and topology, and requires TDD. A fresh implementer handles each approved task. Superpowers runs specification review before code-quality review; findings are corrected and re-reviewed before final verification. Adaptive Effort changes child effort and handoffs, classifies failures, and bounds correction and escalation. Worker count and aggregate usage are optional AAR observations, not routing inputs or per-agent accounting promises.
 
 Superpowers also chooses task boundaries, writer topology, parallelism, and acceptance gates. Adaptive Effort carries those choices into compact child handoffs, classifies failures, counts only corrective upward effort transitions, and records a compact closeout. Planned higher-effort reviews are not escalations.
 
@@ -56,7 +58,12 @@ Use fast handling for this.
 Use deep handling for this.
 Do this directly; don't delegate.
 Do not escalate above Medium.
+Use gpt-5.6-terra for the implementer.
 ```
+
+Model overrides accept exact IDs for `implementer`, `routine-review`, `high-risk-review`, `debugger`, and `recovery`. Unspecified roles inherit the parent model. Model and effort assignments are independent, and an unsupported explicit combination stops at host validation without silent substitution.
+
+Ask for the current Adaptive Effort routing plan and available worker models to get all five resolved routes plus picker-visible candidates from the local Codex client. The command records its executable and version; the active spawn host remains authoritative.
 
 ## Setup check
 
@@ -83,6 +90,6 @@ python3 /absolute/path/to/installed/adaptive-effort/skills/adaptive-effort/scrip
 
 ## Important platform note
 
-The current plugin manifest format does not install custom Codex agent TOMLs. Adaptive Effort supplies explicit `reasoning_effort`, inherited model, fresh context, and role instructions on each spawn without requiring an agent-type field.
+The current plugin manifest format does not install custom Codex agent TOMLs. Adaptive Effort supplies explicit `reasoning_effort`, an exact task-local model when assigned, fresh context, and role instructions on each spawn without requiring an agent-type field. It omits the model argument for roles that should inherit.
 
 Codex IDE extensions do not currently support plugins. Use the Codex app or CLI for Adaptive Effort.

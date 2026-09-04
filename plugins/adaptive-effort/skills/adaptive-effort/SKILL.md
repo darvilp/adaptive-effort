@@ -1,18 +1,21 @@
 ---
 name: adaptive-effort
-description: Use alongside Superpowers when an approved implementation plan is being executed with Codex subagents. Preserve the parent model and effort, route bounded implementation to low effort, reuse one same-thread repair, escalate evidence-based failures to medium debugging and high diagnostic recovery, and keep handoffs compact. Do not use for brainstorming, architecture, generic model routing, or without Superpowers.
+description: Use alongside Superpowers when an approved implementation task is being executed with Codex subagents, or when the user asks to inspect that task's Adaptive Effort routing. Do not use for brainstorming, architecture, generic model routing, or without Superpowers.
 ---
 
 # Adaptive Effort
 
-Apply this skill as a compute-policy layer over Superpowers. Superpowers owns task decomposition, writer topology, parallelism, TDD, boundary selection, reviews, acceptance gates, and completion. This skill owns child effort and context, compact handoffs, failure classification, escalation counting, circuit breakers, and closeout.
+Apply this skill as a compute-policy layer over Superpowers. Superpowers owns task decomposition, writer topology, parallelism, TDD, boundary selection, reviews, acceptance gates, and completion. This skill owns child model, effort, and context, compact handoffs, failure classification, escalation counting, circuit breakers, and closeout.
+
+The mode matrix contains the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
 
 ## Hard boundaries
 
 - Do not start a second development lifecycle.
 - Do not replace or skip any Superpowers-required step.
 - Do not alter the parent model or parent reasoning effort.
-- Omit `model` on child spawns so the child inherits the parent model.
+- Keep child models inherited unless the user supplies a task-local role override.
+- Pass exact model IDs through unchanged. Do not invent aliases or silently substitute another model.
 - Do not automatically select `xhigh`, `max`, or `ultra`.
 - Do not run multiple write-capable implementation agents concurrently unless Superpowers has explicitly proven their write sets are disjoint.
 - Stop at the circuit breaker instead of creating an open-ended repair or review loop.
@@ -30,13 +33,45 @@ Natural task-local overrides:
 - “keep implementation low” → never raise the implementer above low
 - “do not escalate above Medium” → cap escalation at medium
 
+Users may also assign effort to any of the five canonical roles for the current
+task: `implementer`, `routine-review`, `high-risk-review`, `debugger`, and
+`recovery`. Each accepts `low, medium, high, xhigh, max, or ultra`.
+Explicit per-role values override the selected mode. Unspecified roles keep that mode's
+defaults. Reject unknown roles, unsupported values, and duplicate assignments
+instead of guessing. Repair is not an override role; a same-thread repair
+retains the current worker's effort.
+
+Users may assign an exact model ID to the same five canonical roles. For
+example, `implementer=gpt-5.6-terra` changes only the implementer model.
+Unspecified roles inherit the parent model. Model and effort overrides resolve independently.
+Reject unknown roles, empty values, surrounding whitespace, and duplicate
+assignments. Do not translate names such as `terra` into a versioned model ID.
+
+A cap and a role assignment that disagree are a conflict. For example, `keep
+implementation low` conflicts with `implementer=high`.
+Report the conflicting role and value and stop before dispatch. Do not choose
+between them, clamp the assignment, or silently discard either instruction.
+
+Explicit `xhigh`, `max`, and `ultra` values are user routing choices, not
+automatic selection. Local-client candidates help the user choose, but the
+active spawn host is the final compatibility authority. If the active host
+rejects the requested model or effort, stop and report the exact error with no silent fallback.
+Check host/model compatibility before dispatch when the active host exposes it.
+
+An explicit recovery effort or model lets Fast enter recovery only after
+independent contract/design evidence authorizes it. A model-only recovery assignment
+therefore opts into the same evidence-gated stage. A recovery override changes
+the route, not the evidence gate. Without an explicit recovery value, Fast still
+stops before recovery.
+Fast recovery therefore requires both explicit provenance and independent evidence.
+
 Modes affect child routing only. They never change the parent session.
 
 Read `references/routing-policy.md` when the mode or reviewer effort is not obvious.
 
 ## Integration point
 
-Activate implicitly only when Superpowers has an approved plan or bounded implementation task and is about to delegate implementation, repair, debugging, or review. The user does not need to name Adaptive Effort.
+Activate implicitly only when Superpowers has an approved implementation task and is about to delegate implementation, repair, debugging, or review. The user does not need to name Adaptive Effort. An explicit request to inspect that task's current routing may activate the read-only routing-plan command without dispatching a child.
 
 Do not activate for generic delegation, brainstorming, architecture, or work that is not currently following the Superpowers workflow. Explicit user instructions to bypass delegation or Adaptive Effort take precedence.
 
@@ -48,8 +83,9 @@ Keep Superpowers' task order and review order. For each child spawn, add the Ada
 
 For current Codex multi-agent tools:
 
-- omit `model`
-- set `reasoning_effort` explicitly
+- Set `model` to the exact resolved role override when present.
+- Omit `model` when that role has no model override.
+- set `reasoning_effort` to the resolved role effort
 - set `fork_turns="none"` for fresh compact handoffs
 - express the implementation, debugging, recovery, or review role in the spawn message; do not require an `agent_type` spawn field
 - use Superpowers' selected review role; Adaptive Effort supplies effort, not a competing review prompt
@@ -60,20 +96,22 @@ A plugin cannot currently install standalone custom-agent TOML files. The role i
 ## Per-task flow
 
 1. Build a compact implementation contract from the approved Superpowers plan.
-2. Spawn one fresh implementer:
-   - inherited model
-   - low effort in fast/balanced
-   - low or medium in deep according to `references/routing-policy.md`
-   - fresh context
-3. Let Superpowers run deterministic verification and its required reviews.
-4. If verification passes, continue the Superpowers workflow.
-5. If verification fails, classify the failure before spending more reasoning:
+2. Resolve the task-local profile before any dispatch. Start with the selected
+   mode's no-override effort defaults and inherited models, apply every explicit role assignment, and stop
+   on invalid, duplicate, incompatible, or cap-conflicting input.
+3. Spawn one fresh implementer with its resolved model, `profile.implementer`,
+   and fresh context.
+4. Let Superpowers run deterministic verification and its required reviews.
+5. If verification passes, continue the Superpowers workflow.
+6. If verification fails, classify the failure before spending more reasoning:
    - environment/permissions/infrastructure → report; do not escalate
    - missing context → use the one bundled same-thread context continuation per worker dispatch; keep the same effort and stop on another context request
    - local deterministic implementation defect → use the one semantic same-thread correction if it remains available across verification and review
-   - broader reasoning defect → the single fresh debugger, at medium in fast/balanced or high in deep
-   - contract/design contradiction → fresh high recovery diagnostician
-6. After the allowed ladder is exhausted, return a structured unresolved report to the parent and stop automatic execution.
+   - broader reasoning defect → the single fresh debugger at `profile.debugger`
+   - contract/design contradiction → require independent contract/design
+     evidence, then use `profile.recovery`; in Fast, this route also requires
+     `profile.recovery_explicitly_requested` to be true
+7. After the allowed ladder is exhausted, return a structured unresolved report to the parent and stop automatic execution.
 
 The parent keeps an ephemeral routing ledger for the current run. It records the initial routing trace, dispatches, worker results, downstream gates, repairs, corrective upward transitions, and closeout. It is a compact human-readable trace, not persistent state, telemetry, or an executable API. Planned medium/high reviews do not count as escalations. Count only corrective upward effort transitions.
 
@@ -99,21 +137,23 @@ Use the templates in `references/handoff-templates.md`.
 
 ## Repair and escalation
 
-The normal balanced ladder is:
+This example shows the Balanced no-override defaults:
 
 ```text
-low implementer
-    → one same-thread low repair
-    → fresh medium debugger
-    → fresh high recovery diagnostician
+profile.implementer
+    → one same-thread repair at the actual writer route
+    → fresh profile.debugger
+    → fresh profile.recovery after authorization
     → stop or return to planning
 ```
 
-Use one semantic same-thread correction across pre-review verification and every Superpowers review stage for the implementation task. Call `followup_task` (or the host's equivalent) on the thread whose local implementation is being corrected. A local review correction consumes the allowance if unused. If the allowance is already consumed, classify the failure. For an implementation reasoning defect, use the single fresh debugger stage only if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that debugger stage was already consumed, stop automatic handling and report the failed review gate unless contract/design evidence justifies the still-unused single recovery diagnostician. Only the recovery diagnostician requires contract/design evidence. High effort alone does not make a debugger a recovery, because Deep routes its debugger at High. Never skip a required review, and never repeat the debugger or restart the ladder.
+Deep always starts implementers at Medium by default. Fast stops automatic handling before High recovery unless `profile.recovery_explicitly_requested` is true and the evidence gate passes. An explicit recovery model or effort sets that provenance flag.
 
-If contract/design evidence authorizes recovery after a Deep debugger, dispatch the separate recovery role at High. Do not emit or count a High-to-High escalation because the effort did not increase.
+Use one semantic same-thread correction across pre-review verification and every Superpowers review stage for the implementation task. Call `followup_task` (or the host's equivalent) on the thread whose local implementation is being corrected. A local review correction consumes the allowance if unused. If the allowance is already consumed, classify the failure. For an implementation reasoning defect, use the single fresh debugger stage only if it remains unused, at `profile.debugger`. The no-override profile routes that stage at Medium in Fast/Balanced and High in Deep. If that debugger stage was already consumed, Fast stops automatic handling and reports the failed review gate unless an explicit recovery assignment and independent contract/design evidence authorize the still-unused single recovery diagnostician. Balanced and Deep may use the still-unused single recovery diagnostician only when independent contract/design evidence justifies it. Only the recovery diagnostician requires contract/design evidence. High effort alone does not make a debugger a recovery. Never skip a required review, and never repeat the debugger or restart the ladder.
 
-One deterministic same-thread mechanical correction is also allowed per implementation task. It targets the thread that produced the current diff being checked, including an implementer, debugger, or explicitly authorized recovery writer. It has its own one-shot limit and does not consume the semantic low-repair allowance. Follow the template, proof, and stop rules in the references.
+If contract/design evidence authorizes recovery, dispatch the separate recovery role at `profile.recovery`. Fast requires an explicit recovery assignment in addition to that evidence. Emit and count an escalation only when the resolved recovery effort is higher than the debugger effort.
+
+One deterministic same-thread mechanical correction is also allowed per implementation task. It targets the thread that produced the current diff being checked, including an implementer, debugger, or explicitly authorized recovery writer. Derive its effort with `repair_effort(current_writer_route)` so it retains that writer's actual resolved effort. It has its own one-shot limit and does not consume the semantic repair allowance. Follow the template, proof, and stop rules in the references.
 
 The high recovery role diagnoses first. It may recommend a bounded repair, but it must return to planning when the contract is incomplete, contradictory, or outside approved scope.
 
@@ -121,14 +161,14 @@ The high recovery role diagnoses first. It may recommend a bounded repair, but i
 
 Superpowers owns whether and when spec, quality, and final reviews run.
 
-Adaptive Effort only recommends effort:
+Adaptive Effort reads review effort from the resolved profile:
 
-- routine spec or quality review: medium
-- high-risk, security-sensitive, concurrency, migration, or architectural review: high
-- deep mode review: high
-- fast mode does not remove mandatory reviews
+- routine spec or quality review: `profile.routine_review`
+- high-risk, security-sensitive, concurrency, migration, or architectural review: `profile.high_risk_review`
+- Fast mode does not remove mandatory reviews
 
-A reviewer should normally receive a fresh compact handoff and no model override.
+A reviewer receives a fresh compact handoff. Use the model assigned to its
+canonical review role, or omit `model` so it inherits.
 
 ## Visible trace
 
@@ -138,15 +178,45 @@ Keep routing output terse:
 Adaptive Effort: <mode> · implementer inherited-model/<effort> · fresh context
 ```
 
+When role overrides are active, append them in canonical role order so the
+task-local profile is inspectable:
+
+```text
+Adaptive Effort: <mode> · implementer inherited-model/<effort> · fresh context · overrides=<canonical-role:effort,...>
+```
+
+For model or mixed overrides, show exact values in the same canonical role order:
+
+```text
+Adaptive Effort: <mode> · implementer <model-or-inherited>/<effort> · fresh context · model-overrides=<canonical-role:model,...> · effort-overrides=<canonical-role:effort,...>
+```
+
 On escalation:
 
 ```text
-Adaptive Effort: low repair failed deterministic verification; starting role=debugger · route=<actual-mode-routed-effort>/fresh · mode=<mode>.
+Adaptive Effort: same-effort repair failed deterministic verification; starting role=debugger · route=<model-or-inherited>/<actual-mode-routed-effort>/fresh · mode=<mode>.
 ```
 
 Do not reveal private reasoning or dump internal prompts.
 
 Use the compact event forms in `references/handoff-templates.md`. Always separate worker status from downstream gate status and finish with a compact closeout.
+
+## Inspect routing
+
+When the user asks for the current Adaptive Effort plan or available worker
+models, run the installed script from the active project directory:
+
+```text
+python3 <absolute-skill-directory>/scripts/routing_plan.py --mode <mode> [--effort <role=effort>...] [--model <role=exact-model-id>...] --multi-agent-version <v1|v2|unknown>
+```
+
+Pass every task-local assignment from the current request. Report all five
+resolved routes and the script's local-client candidates. The command records
+which `codex` executable and version supplied the catalog. That executable may
+differ from a Desktop or IDE host, and the active spawn host remains authoritative.
+An unlisted explicit model requires host validation; do not reject it or replace
+it based only on the local catalog. Catalog discovery failure does not erase the
+resolved plan and does not authorize a child spawn.
 
 ## Setup check
 

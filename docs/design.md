@@ -2,7 +2,7 @@
 
 ## 1. Summary
 
-Adaptive Effort is a Codex plugin that extends Superpowers with reasoning-effort routing, bounded escalation, and context/cost controls.
+Adaptive Effort is a Codex plugin that extends Superpowers with task-local child model and reasoning-effort routing, bounded escalation, and context/cost controls.
 
 Superpowers owns the software-development workflow:
 
@@ -17,7 +17,9 @@ Superpowers owns the software-development workflow:
 
 Adaptive Effort owns one narrower decision:
 
-> Given the agent role and the evidence available, how much reasoning effort should the next Codex agent receive?
+> Given the agent role, explicit task-local assignments, and the evidence available, which child model and reasoning effort should the next Codex agent receive?
+
+The mode matrix contains the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
 
 The intended pattern is:
 
@@ -29,10 +31,10 @@ Medium / High / user-selected
 Superpowers design + planning
         │
         ▼
-bounded implementation contract
+approved implementation contract
         │
         ▼
-Low implementation
+mode-routed implementation
         │
    deterministic verification
         │
@@ -67,6 +69,7 @@ Codex
 │     └── verification
 │
 └── Adaptive Effort plugin
+      ├── task-local child model routing
       ├── child effort routing
       ├── compact context handoff
       ├── evidence-driven escalation
@@ -85,7 +88,7 @@ Adaptive Effort should:
 1. Preserve normal Superpowers behavior.
 2. Require little or no manual agent invocation.
 3. Respect the model and effort selected for the active Codex parent session.
-4. Use lower reasoning effort for bounded implementation by default.
+4. Route implementation effort directly from the selected mode.
 5. Increase reasoning effort only when verification evidence justifies it.
 6. Avoid copying large parent conversations into worker contexts.
 7. Prevent unbounded repair, review, or escalation loops.
@@ -112,7 +115,7 @@ Adaptive Effort does not implement its own:
 
 Those remain Superpowers responsibilities.
 
-The plugin also does not automatically route between model families. The optimization dimension is **reasoning effort within the inherited parent model**.
+The plugin does not automatically choose or switch model families. Built-in modes remain model-agnostic: a role inherits the parent model unless the user supplies an exact task-local model ID for that role.
 
 For example:
 
@@ -120,7 +123,7 @@ For example:
 Parent: Sol / High
 
 Implementer:
-  model  = inherited Sol
+  model  = inherited Sol, or an exact user override
   effort = Low
 ```
 
@@ -167,7 +170,8 @@ adaptive-effort/
 │       │       │   └── superpowers-integration.md
 │       │       ├── scripts/
 │       │       │   ├── doctor.py
-│       │       │   └── policy.py
+│       │       │   ├── policy.py
+│       │       │   └── routing_plan.py
 │       │       └── SKILL.md
 ├── scripts/
 │   ├── package.py
@@ -176,7 +180,8 @@ adaptive-effort/
 │   ├── test_doctor.py
 │   ├── test_package.py
 │   ├── test_policy.py
-│   └── test_references.py
+│   ├── test_references.py
+│   └── test_routing_plan.py
 ├── README.md
 ├── CHANGELOG.md
 └── LICENSE
@@ -312,7 +317,7 @@ the parent remains Sol / High.
 
 If the user selects another supported model or effort, Adaptive Effort leaves it unchanged.
 
-Default policy:
+Default and override policy:
 
 ```text
 Parent:
@@ -320,11 +325,11 @@ Parent:
   effort = Codex session setting
 
 Child:
-  model  = inherit from parent
+  model  = exact task-local role override, otherwise inherit from parent
   effort = Adaptive Effort role policy
 ```
 
-Adaptive Effort does not set a global parent model or reasoning effort.
+Adaptive Effort does not set a global parent model or reasoning effort. Model and effort assignments resolve independently for `implementer`, `routine-review`, `high-risk-review`, `debugger`, and `recovery`. Exact model IDs pass through unchanged; the plugin does not maintain aliases or silently substitute a fallback.
 
 ---
 
@@ -341,7 +346,7 @@ eventual success, and exhausted retries.
 
 Superpowers drives the engineering workflow.
 
-When implementation is delegated, Adaptive Effort applies the appropriate child-effort policy.
+When implementation is delegated, Adaptive Effort applies the appropriate child model, effort, and context policy.
 
 For architecture-heavy work:
 
@@ -371,7 +376,7 @@ Manual `$adaptive-effort` invocation may exist for explicit use or diagnostics, 
 
 Purpose:
 
-- execute one bounded implementation task
+- execute one approved implementation task
 - follow the approved plan and task contract
 - satisfy the tests and acceptance criteria supplied by Superpowers
 - make the smallest appropriate change
@@ -379,13 +384,13 @@ Purpose:
 Configuration:
 
 ```text
-model:             inherit
-reasoning effort:  Low
+model:             exact implementer override, otherwise omit
+reasoning effort:  profile.implementer
 context:           fresh / compact
 write access:      yes
 ```
 
-The implementer should report significant ambiguity rather than inventing architecture outside the approved scope.
+Set `model` to the exact `implementer` override when present; otherwise omit it for inheritance. The implementer should report significant ambiguity rather than inventing architecture outside the approved scope.
 
 ---
 
@@ -401,13 +406,13 @@ Purpose:
 Configuration:
 
 ```text
-model:             inherit
-reasoning effort:  Medium
+model:             exact debugger override, otherwise omit
+reasoning effort:  profile.debugger
 context:           fresh / compact
 write access:      yes
 ```
 
-The debugger starts fresh after the original implementer has exhausted its cheap repair attempt.
+Set `model` to the exact `debugger` override when present; otherwise omit it for inheritance. The debugger starts fresh after the original implementer has exhausted its cheap repair attempt.
 
 ---
 
@@ -422,13 +427,13 @@ Purpose:
 Configuration:
 
 ```text
-model:             inherit
-reasoning effort:  High
+model:             exact recovery override, otherwise omit
+reasoning effort:  profile.recovery
 context:           fresh / compact
 write access:      constrained where practical
 ```
 
-The recovery agent is a diagnostician, not simply a stronger implementer.
+Set `model` to the exact `recovery` override when present; otherwise omit it for inheritance. The recovery agent is a diagnostician, not simply a stronger implementer.
 
 Its valid outcomes include:
 
@@ -449,13 +454,14 @@ return to planning
 
 Superpowers owns review timing and review requirements.
 
-Adaptive Effort may supply reasoning-effort policy for reviewers:
+Adaptive Effort supplies the resolved review effort:
 
 ```text
-routine implementation review   Medium
-high-risk review                 High
-architectural challenge          High
+routine review                  routine-review model route / profile.routine_review
+high-risk review                high-risk-review model route / profile.high_risk_review
 ```
+
+Each reviewer receives the exact model assigned to its canonical review role, or omits `model` to inherit.
 
 It does not create an independent review lifecycle.
 
@@ -524,12 +530,11 @@ Parent with large architecture context
         │
         └── compact contract
                  ↓
-          Low implementer
+          Mode-routed implementer
                  │
                  └── diff + failures
                            ↓
-                    Mode-routed debugger
-                 Medium Fast/Balanced, High Deep
+                    profile.debugger
 ```
 
 Avoid propagating the full parent transcript through every child.
@@ -544,32 +549,29 @@ Fresh context provides both token savings and an independent reasoning path.
 SUPERPOWERS TASK READY
           │
           ▼
-    LOW IMPLEMENTER
+    profile.implementer
           │
       verification
        /        \
     PASS        FAIL
      │            │
      ▼            ▼
-continue      LOW REPAIR
+continue   SAME-EFFORT REPAIR
 workflow          │
               verification
                /       \
             PASS       FAIL
              │           │
              ▼           ▼
-          continue    FRESH DEBUGGER
-                    MEDIUM FAST/BALANCED
-                         HIGH DEEP
+          continue    FRESH profile.debugger
                           │
                       verification
                        /       \
                     PASS       FAIL
                      │           │
                      ▼           ▼
-                  continue     HIGH
-                            DIAGNOSTIC
-                              RECOVERY
+                  continue   AUTHORIZATION GATE
+                             profile.recovery
                                 │
                     ┌───────────┴───────────┐
                     ▼                       ▼
@@ -604,7 +606,7 @@ Observed 4 attempts.
 Correct the implementation while preserving the approved contract.
 ```
 
-If the correction still fails, or a later local review finding occurs after the allowance is consumed, classify the failure. An implementation reasoning defect uses the one debugger stage if it remains unused, routed at Medium in Fast/Balanced and High in Deep. If that stage was already consumed, automatic handling stops and reports the failed review gate unless contract or design evidence justifies the still-unused recovery diagnostician. A Deep debugger is High because of its mode, not because it is recovery. Required reviews still run, and the ladder never repeats or restarts.
+If the correction still fails, or a later local review finding occurs after the allowance is consumed, classify the failure. An implementation reasoning defect uses the one debugger stage at `profile.debugger` if it remains unused. Recovery uses `profile.recovery` only when independent contract/design evidence justifies it. Fast also requires `profile.recovery_explicitly_requested`. Required reviews still run, and the ladder never repeats or restarts.
 
 A deterministic hygiene failure may receive one separate same-thread mechanical correction on the thread that produced the current diff. It requires exact targets and transformation, comparison against the last semantically accepted diff, a semantic-equivalence command and result, and a rerun of the failed hygiene gate. A second mechanical correction stops automatic handling without raising effort.
 
@@ -618,13 +620,13 @@ A worker may receive one bundled same-thread context continuation per dispatch. 
 
 Use the one mode-routed debugger stage when:
 
-- the Low repair fails
+- the same-effort repair fails
 - the failure involves non-obvious interactions
 - tests conflict unexpectedly
 - repository behavior differs from implementation assumptions
 - broader control-flow or data-flow analysis is required
 
-In Fast and Balanced, moving from a Low worker to the Medium debugger is one corrective upward effort transition. Deep routes the debugger at High.
+Compare the implementer's actual resolved effort with `profile.debugger`. Count one corrective upward transition only when the debugger effort is higher.
 
 ### Debugger to recovery
 
@@ -636,7 +638,7 @@ Enter recovery only when independent contract or design evidence shows one of th
 - testing exposes an unstated invariant
 - the debugger determines that the plan itself may be wrong
 
-Repeated verification failure or a repeated fingerprint alone does not authorize recovery. In Fast and Balanced, the Medium debugger to High recovery move is a counted upward effort transition. In Deep, dispatch the separate High recovery role without an `escalate` event or count increase because the debugger already ran at High.
+Repeated verification failure or a repeated fingerprint alone does not authorize recovery. Independent contract/design evidence is always required. Fast also requires `profile.recovery_explicitly_requested`. Compare `profile.debugger` with `profile.recovery`, and count an escalation only when the recovery effort is higher.
 
 ### Do not escalate reasoning for
 
@@ -658,15 +660,15 @@ Adaptive Effort carries only boundaries selected by Superpowers. An adjacent `bo
 
 ## 18. Circuit breakers
 
-Default limits:
+These stage limits apply to every resolved profile:
 
 ```text
-Low implementation attempts:  1
-Low repair attempts:          1
+Implementation attempts:      1, profile.implementer
+Same-effort repair attempts:  1
 Mechanical corrections:      1, separate
 Context continuations:        1 per worker dispatch, separate
-Debugger attempts:            1, Medium Fast/Balanced or High Deep
-Recovery attempts:            1, High
+Debugger attempts:            1, profile.debugger
+Recovery attempts:            1 when the authorization gate passes, profile.recovery
 ```
 
 When the ladder is exhausted, automatic execution stops.
@@ -677,10 +679,10 @@ The parent receives a structured summary:
 Implementation unresolved.
 
 Attempts:
-- implementation: route=<actual-effort>/<context> · failed X
-- semantic correction: route=<retained-effort>/same-thread · failed Y
-- debugger: route=<actual-mode-routed-effort>/fresh · mode=<mode> · identified Z
-- recovery diagnostician: route=high/fresh · contract likely conflicts with A
+- implementation: route=<model-or-inherited>/<actual-effort>/<context> · failed X
+- semantic correction: route=<retained-model>/<retained-effort>/same-thread · failed Y
+- debugger: route=<model-or-inherited>/<profile.debugger>/fresh · mode=<mode> · identified Z
+- recovery diagnostician: route=<model-or-inherited>/<profile.recovery>/fresh · contract likely conflicts with A
 
 Recommended action:
 Return to planning and revisit assumption B.
@@ -692,9 +694,9 @@ The parent records a compact closeout with gate status, true escalation count, a
 
 ---
 
-## 19. Orchestration modes
+## 19. No-override default orchestration modes
 
-Modes control Adaptive Effort behavior only. They never modify the active parent model or parent effort.
+These examples show the no-override defaults. Modes control Adaptive Effort behavior only. They never modify the active parent model or parent effort.
 
 ### Fast
 
@@ -702,8 +704,9 @@ Modes control Adaptive Effort behavior only. They never modify the active parent
 Implementer       Low
 Cheap repair      Low
 Debugger          Medium
-High recovery     only for strong conceptual evidence
-Additional review only when Superpowers requires it
+Routine review    Low
+High recovery     no automatic route
+Required reviews  unchanged; high-risk review High
 ```
 
 Suitable for routine, low-risk work.
@@ -717,18 +720,21 @@ Implementer       Low
 Cheap repair      Low
 Debugger          Medium
 Recovery          High
-Reviewer effort   Medium, raised to High for risk
+Routine review    Medium, raised to High for risk
 ```
 
 ### Deep
 
 ```text
-Implementer       Low or Medium according to task complexity
+Implementer       Medium
+Cheap repair      Medium
 Debugger          High
 Recovery          High
-Reviewer           higher-effort independent review
+Routine review    High
 Verification       broad
 ```
+
+Explicit role assignments replace the corresponding values above. Adaptive Effort does not require an upfront work category.
 
 XHigh and Max are outside the automatic routing policy.
 
@@ -748,9 +754,15 @@ Do this directly; don't delegate.
 Keep implementation at Low.
 
 Do not escalate above Medium.
+
+Use gpt-5.6-terra for the implementer.
 ```
 
 Task-local language affects only that workflow unless the user explicitly requests a persistent preference.
+
+Effort and model assignments use the same canonical roles: `implementer`, `routine-review`, `high-risk-review`, `debugger`, and `recovery`. Effort values are validated against the supported effort vocabulary. Model values are non-empty exact IDs and are not aliases. Each assignment patches only its matching field; unassigned efforts retain the mode default and unassigned models inherit the parent.
+
+An explicit recovery model or effort assignment gives Fast the provenance required to consider recovery. Independent contract/design evidence is still required before dispatch. If the active host rejects a requested model or model/effort combination, stop and report its error instead of substituting another route.
 
 Normal development should not require manually naming worker agents.
 
@@ -758,18 +770,20 @@ Normal development should not require manually naming worker agents.
 
 ## 21. Configuration
 
-The default policy should remain small:
+This example shows the Balanced no-override defaults:
 
 ```text
 mode = balanced
 
 implementer_effort = low
+routine_review_effort = medium
+high_risk_review_effort = high
 debugger_effort = medium
 recovery_effort = high
 
-low_repairs = 1
-medium_debuggers = 1
-high_recoveries = 1
+semantic_repairs = 1
+debugger_attempts = 1
+authorized_recoveries = 1
 ```
 
 The plugin should not require global Codex configuration changes for its own policy.
@@ -781,7 +795,7 @@ parent_model
 parent_effort
 ```
 
-and should not pin child models by default.
+and should not pin child models in built-in defaults. A task-local exact model assignment is passed only to its matching child role.
 
 ---
 
@@ -814,6 +828,7 @@ It becomes applicable when:
 - verification has failed and escalation is being considered
 - a Superpowers reviewer requires an effort policy
 - the user explicitly asks for Adaptive Effort behavior
+- the user asks to inspect the resolved Adaptive Effort plan or available worker models for an approved task
 
 It should not independently trigger to:
 
@@ -823,6 +838,8 @@ It should not independently trigger to:
 - decompose every request
 - replace Superpowers
 - perform generic model routing
+
+Read-only route inspection does not dispatch a child. It returns all five resolved role routes plus picker-visible candidates reported by the local Codex client. The output identifies that client executable and version, and labels the candidate list as advisory because the active spawn host is the final compatibility authority.
 
 The core instruction is:
 
@@ -880,7 +897,7 @@ Example:
 
 ```text
 Adaptive Effort
-Implementer: inherited model / Low
+Implementer: exact override or inherited model / Low
 Mode: balanced
 Context: fresh
 ```
@@ -888,8 +905,8 @@ Context: fresh
 Escalation:
 
 ```text
-Adaptive Effort: low repair failed deterministic verification;
-starting role=debugger · route=<actual-mode-routed-effort>/fresh · mode=<mode>.
+Adaptive Effort: same-effort repair failed deterministic verification;
+starting role=debugger · route=<model-or-inherited>/<actual-mode-routed-effort>/fresh · mode=<mode>.
 ```
 
 Conceptual failure:
@@ -975,7 +992,9 @@ Verify:
 - skill metadata
 - skill presentation metadata
 - Python script syntax
-- child models are unpinned
+- built-in child model defaults are unpinned
+- exact task-local model overrides pass through unchanged
+- rejected model/effort combinations do not silently fall back
 - no parent model/effort settings
 - no global filesystem assumptions
 
@@ -984,17 +1003,20 @@ Verify:
 Test:
 
 ```text
-Low succeeds
+No-override Low succeeds
 → no escalation
 
-Low fails, Low repair succeeds
+No-override Low fails, repair succeeds at the actual writer route
 → no Medium
 
-Low + repair fail
-→ fresh mode-routed debugger
+Implementation and repair fail
+→ fresh profile.debugger
 
-Debugger and deterministic evidence identify a contract/design problem
-→ High recovery role
+Debugger and independent contract/design evidence identify a contract/design problem
+→ profile.recovery when the mode-specific provenance gate also passes
+
+Fast debugger is spent without explicit recovery provenance
+→ no recovery; stop
 
 Repeated fingerprint without contract/design evidence
 → no recovery; stop when the debugger is spent
@@ -1005,7 +1027,7 @@ Environment failure
 Planned High review
 → zero escalation count
 
-Low → Medium → High corrective transitions
+Actual resolved efforts rise twice across corrective transitions
 → two escalations even across different boundaries
 
 Mechanical correction succeeds
@@ -1058,7 +1080,8 @@ Verify:
 ```text
 parent model unchanged
 parent effort unchanged
-child model inherited
+unassigned child role inherits parent model
+assigned child role receives the exact model ID
 child effort follows role policy
 ```
 
@@ -1091,10 +1114,10 @@ A. Superpowers
 
 B. Superpowers + Adaptive Effort
    Parent Sol / High
-   implementation Low
-   repair Low
-   debugger Medium
-   recovery High only when evidence warrants
+   implementation profile.implementer
+   repair retains the actual writer route
+   debugger profile.debugger
+   recovery profile.recovery after the authorization gate
 ```
 
 Observe when the host exposes aggregate data:
@@ -1124,12 +1147,13 @@ The plugin snapshot contains:
 - Git marketplace manifest
 - Superpowers dependency detection
 - one implicit Adaptive Effort skill
-- Low implementer
-- mode-routed debugger, Medium in Fast/Balanced and High in Deep
-- High recovery diagnostician
-- inherited child model
+- task-local `profile.implementer`, `profile.routine_review`, `profile.high_risk_review`, `profile.debugger`, and `profile.recovery` routes
+- Fast recovery provenance through `profile.recovery_explicitly_requested`
+- evidence-gated recovery in every mode
+- inherited child model defaults with exact task-local role overrides
+- local routing-plan inspection with advisory model candidates
 - fresh-context handoff policy
-- one cheap Low repair
+- one same-effort repair
 - bounded escalation
 - fast, balanced, and deep modes
 - natural overrides
@@ -1239,7 +1263,7 @@ Adaptive Effort is successful when:
 3. Superpowers remains the authoritative engineering workflow.
 4. Users do not manually manage ordinary implementation/debugger agents.
 5. Parent model and effort remain exactly as selected by the user.
-6. Child models inherit the parent model.
+6. Unassigned child roles inherit the parent model; assigned roles receive the exact task-local model ID.
 7. Routine implementation normally runs at Low effort.
 8. Escalation occurs in response to verification evidence.
 9. Child context remains compact as the parent conversation grows.

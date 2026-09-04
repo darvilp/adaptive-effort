@@ -7,9 +7,9 @@ These are structural templates. Insert the actual task content; do not send brac
 The parent keeps these compact, human-readable events in an ephemeral routing ledger. Do not expose them as a machine API:
 
 ```text
-dispatch · role=<role> · route=<effort/context> · purpose=<implementation|planned-review|debug|recovery>
+dispatch · role=<role> · route=<model-or-inherited/effort/context> · purpose=<implementation|planned-review|debug|recovery>
 result   · worker=<status> · gate=<NOT_RUN|PASS|FAIL|BLOCKED>
-repair   · kind=<semantic|mechanical> · route=<effort/context>
+repair   · kind=<semantic|mechanical> · route=<model-or-inherited/effort/context>
 escalate · from=<effort> · to=<effort> · fingerprint=<behavior|boundary|invariant>
 closeout · gate=<status> · escalations=<count> · stop=<reason>
 ```
@@ -186,7 +186,7 @@ EVIDENCE
 <all relevant deterministic failures>
 
 ATTEMPT SUMMARY
-<low implementation, low repair, debugger outcomes>
+<implementation, retained-effort repair, debugger outcomes>
 
 QUESTIONS
 - Can all requirements be satisfied within approved scope?

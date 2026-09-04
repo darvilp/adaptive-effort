@@ -1,6 +1,6 @@
 {
   "name": "adaptive-effort",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Route Superpowers workers",
   "author": {
     "name": "darvilp",
@@ -21,17 +21,17 @@
   "interface": {
     "displayName": "Adaptive Effort",
     "shortDescription": "Route Superpowers workers",
-    "longDescription": "Adaptive Effort is a Codex compute-policy layer for approved Superpowers implementation plans. It preserves the parent model and effort, routes bounded workers to lower reasoning effort, and uses fresh medium or high agents only after classified evidence warrants debugging or recovery. Superpowers still owns planning, worker topology, TDD, reviews, and verification.",
+    "longDescription": "Adaptive Effort is a Codex compute-policy layer for approved Superpowers implementation plans. It preserves the parent model and effort, routes child reasoning by Fast, Balanced, or Deep mode, and uses classified evidence to bound debugging and recovery. Superpowers still owns planning, worker topology, TDD, reviews, and verification.",
     "developerName": "darvilp",
     "category": "Developer Tools",
     "capabilities": [
-      "Route bounded implementation to low effort",
+      "Route implementation and review effort by mode",
       "Escalate failed repairs using evidence",
       "Record compact routing and closeout traces"
     ],
     "defaultPrompt": [
       "Implement this approved Superpowers plan with balanced Adaptive Effort routing.",
-      "Implement this approved multi-file Superpowers plan with deep Adaptive Effort routing.",
+      "Implement this approved Superpowers plan with deep Adaptive Effort routing.",
       "Check Adaptive Effort setup live."
     ],
     "websiteURL": "https://github.com/darvilp/adaptive-effort",

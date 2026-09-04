@@ -1,0 +1,48 @@
+{
+  "mode": "fast",
+  "effortAssignments": [
+    "debugger=xhigh"
+  ],
+  "modelAssignments": [
+    "implementer=gpt-5.6-terra",
+    "routine-review=gpt-5.6-luna",
+    "high-risk-review=gpt-5.6-sol",
+    "debugger=custom/provider-model",
+    "recovery=gpt-5.6-sol"
+  ],
+  "routes": [
+    {
+      "name": "implementer",
+      "role": "implementer",
+      "expectedEffort": "low",
+      "expectedModel": "gpt-5.6-terra"
+    },
+    {
+      "name": "routine-review",
+      "role": "reviewer",
+      "risk": "routine",
+      "expectedEffort": "low",
+      "expectedModel": "gpt-5.6-luna"
+    },
+    {
+      "name": "high-risk-review",
+      "role": "reviewer",
+      "risk": "high",
+      "expectedEffort": "high",
+      "expectedModel": "gpt-5.6-sol"
+    },
+    {
+      "name": "debugger",
+      "role": "debugger",
+      "expectedEffort": "xhigh",
+      "expectedModel": "custom/provider-model"
+    },
+    {
+      "name": "recovery",
+      "role": "recovery",
+      "expectedEffort": "high",
+      "expectedModel": "gpt-5.6-sol"
+    }
+  ],
+  "fastRecoveryModelOnly": "gpt-5.6-sol"
+}

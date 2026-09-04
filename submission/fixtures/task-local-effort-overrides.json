@@ -1,0 +1,31 @@
+{
+  "mode": "fast",
+  "effortAssignments": [
+    "implementer=medium",
+    "routine-review=high",
+    "high-risk-review=low",
+    "debugger=xhigh",
+    "recovery=max"
+  ],
+  "routes": [
+    {"name": "implementer", "role": "implementer", "expectedEffort": "medium"},
+    {"name": "routine-review", "role": "reviewer", "risk": "routine", "expectedEffort": "high"},
+    {"name": "high-risk-review", "role": "reviewer", "risk": "high", "expectedEffort": "low"},
+    {"name": "debugger", "role": "debugger", "expectedEffort": "xhigh"},
+    {"name": "recovery", "role": "recovery", "expectedEffort": "max"}
+  ],
+  "repairs": [
+    {"currentWriterRole": "implementer", "expectedEffort": "medium"},
+    {"currentWriterRole": "debugger", "expectedEffort": "xhigh"},
+    {"currentWriterRole": "recovery", "expectedEffort": "max"}
+  ],
+  "conflictingInput": {
+    "cap": "implementer=low",
+    "assignment": "implementer=high",
+    "expectedError": "effort override conflicts with cap: implementer=high exceeds low"
+  },
+  "fastRecovery": {
+    "withoutEvidence": "stop",
+    "withEvidence": "recovery"
+  }
+}

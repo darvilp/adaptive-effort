@@ -4,24 +4,27 @@ The canonical product design is maintained in [`docs/design.md`](docs/design.md)
 
 ## Purpose
 
-Adaptive Effort augments Superpowers with a compute policy. Superpowers decides what engineering workflow to run; Adaptive Effort decides the reasoning effort assigned to each delegated Codex role.
+Adaptive Effort augments Superpowers with a compute policy. Superpowers decides what engineering workflow to run; Adaptive Effort resolves the model, reasoning effort, and fresh context assigned to each delegated Codex role.
 
 ## Core rules
 
+The fixed values below are the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
+
 1. Parent model and effort remain user-selected.
-2. Child model is inherited.
-3. Bounded implementation starts at low effort.
-4. One local failure gets one same-thread repair at the existing worker's effort.
-5. Broader implementation failure gets a fresh medium debugger.
-6. Contract or architecture evidence gets one fresh high recovery diagnosis.
+2. A child uses an exact task-local role model override when supplied; otherwise its model is inherited.
+3. No-override implementation uses Low in Fast and Balanced and Medium in Deep.
+4. One local failure gets one same-thread repair at the actual writer route.
+5. A broader implementation failure gets one fresh debugger at `profile.debugger`.
+6. Recovery uses `profile.recovery` only with independent contract/design evidence. Fast also requires explicit recovery provenance.
 7. Environment failures do not trigger more reasoning.
 8. Child handoffs are compact and fresh.
 9. Superpowers quality gates remain intact.
 10. Automatic execution stops at a fixed circuit breaker.
+11. Local model discovery is advisory; the active spawn host is authoritative and a rejected override never falls back silently.
 
 ## Packaging decision
 
-The plugin is skills-only because the current Codex plugin manifest does not install custom-agent TOML definitions. The skill expresses roles through explicit spawn arguments and role prompts.
+The plugin is skills-only because the current Codex plugin manifest does not install custom-agent TOML definitions. The skill expresses roles through explicit spawn arguments and role prompts, passing a model only when the task has an exact role override.
 
 ## Distribution
 

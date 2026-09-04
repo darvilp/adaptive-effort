@@ -2,7 +2,7 @@
 
 ## 1. Summary
 
-Adaptive Effort is a Codex plugin that extends Superpowers with reasoning-effort routing, bounded escalation, and context/cost controls.
+Adaptive Effort is a Codex plugin that extends Superpowers with task-local child model and reasoning-effort routing, bounded escalation, and context/cost controls.
 
 Superpowers owns the software-development workflow:
 
@@ -17,7 +17,7 @@ Superpowers owns the software-development workflow:
 
 Adaptive Effort owns one narrower decision:
 
-> Given the agent role and the evidence available, how much reasoning effort should the next Codex agent receive?
+> Given the agent role, explicit task-local assignments, and the evidence available, which child model and reasoning effort should the next Codex agent receive?
 
 The mode matrix contains the no-override defaults. Explicit role assignments patch the selected mode's profile. Dispatch implementation with `profile.implementer` and debugging with `profile.debugger`. Reviews use `profile.routine_review` or `profile.high_risk_review`. Recovery uses `profile.recovery`. In Fast, recovery also requires `profile.recovery_explicitly_requested` and independent contract/design evidence. A semantic or mechanical repair retains the actual writer route.
 
@@ -69,6 +69,7 @@ Codex
 │     └── verification
 │
 └── Adaptive Effort plugin
+      ├── task-local child model routing
       ├── child effort routing
       ├── compact context handoff
       ├── evidence-driven escalation
@@ -114,7 +115,7 @@ Adaptive Effort does not implement its own:
 
 Those remain Superpowers responsibilities.
 
-The plugin also does not automatically route between model families. The optimization dimension is **reasoning effort within the inherited parent model**.
+The plugin does not automatically choose or switch model families. Built-in modes remain model-agnostic: a role inherits the parent model unless the user supplies an exact task-local model ID for that role.
 
 For example:
 
@@ -122,7 +123,7 @@ For example:
 Parent: Sol / High
 
 Implementer:
-  model  = inherited Sol
+  model  = inherited Sol, or an exact user override
   effort = Low
 ```
 
@@ -169,7 +170,8 @@ adaptive-effort/
 │       │       │   └── superpowers-integration.md
 │       │       ├── scripts/
 │       │       │   ├── doctor.py
-│       │       │   └── policy.py
+│       │       │   ├── policy.py
+│       │       │   └── routing_plan.py
 │       │       └── SKILL.md
 ├── scripts/
 │   ├── package.py
@@ -178,7 +180,8 @@ adaptive-effort/
 │   ├── test_doctor.py
 │   ├── test_package.py
 │   ├── test_policy.py
-│   └── test_references.py
+│   ├── test_references.py
+│   └── test_routing_plan.py
 ├── README.md
 ├── CHANGELOG.md
 └── LICENSE
@@ -314,7 +317,7 @@ the parent remains Sol / High.
 
 If the user selects another supported model or effort, Adaptive Effort leaves it unchanged.
 
-Default policy:
+Default and override policy:
 
 ```text
 Parent:
@@ -322,11 +325,11 @@ Parent:
   effort = Codex session setting
 
 Child:
-  model  = inherit from parent
+  model  = exact task-local role override, otherwise inherit from parent
   effort = Adaptive Effort role policy
 ```
 
-Adaptive Effort does not set a global parent model or reasoning effort.
+Adaptive Effort does not set a global parent model or reasoning effort. Model and effort assignments resolve independently for `implementer`, `routine-review`, `high-risk-review`, `debugger`, and `recovery`. Exact model IDs pass through unchanged; the plugin does not maintain aliases or silently substitute a fallback.
 
 ---
 
@@ -343,7 +346,7 @@ eventual success, and exhausted retries.
 
 Superpowers drives the engineering workflow.
 
-When implementation is delegated, Adaptive Effort applies the appropriate child-effort policy.
+When implementation is delegated, Adaptive Effort applies the appropriate child model, effort, and context policy.
 
 For architecture-heavy work:
 
@@ -381,13 +384,13 @@ Purpose:
 Configuration:
 
 ```text
-model:             inherit
+model:             exact implementer override, otherwise omit
 reasoning effort:  profile.implementer
 context:           fresh / compact
 write access:      yes
 ```
 
-The implementer should report significant ambiguity rather than inventing architecture outside the approved scope.
+Set `model` to the exact `implementer` override when present; otherwise omit it for inheritance. The implementer should report significant ambiguity rather than inventing architecture outside the approved scope.
 
 ---
 
@@ -403,13 +406,13 @@ Purpose:
 Configuration:
 
 ```text
-model:             inherit
+model:             exact debugger override, otherwise omit
 reasoning effort:  profile.debugger
 context:           fresh / compact
 write access:      yes
 ```
 
-The debugger starts fresh after the original implementer has exhausted its cheap repair attempt.
+Set `model` to the exact `debugger` override when present; otherwise omit it for inheritance. The debugger starts fresh after the original implementer has exhausted its cheap repair attempt.
 
 ---
 
@@ -424,13 +427,13 @@ Purpose:
 Configuration:
 
 ```text
-model:             inherit
+model:             exact recovery override, otherwise omit
 reasoning effort:  profile.recovery
 context:           fresh / compact
 write access:      constrained where practical
 ```
 
-The recovery agent is a diagnostician, not simply a stronger implementer.
+Set `model` to the exact `recovery` override when present; otherwise omit it for inheritance. The recovery agent is a diagnostician, not simply a stronger implementer.
 
 Its valid outcomes include:
 
@@ -454,9 +457,11 @@ Superpowers owns review timing and review requirements.
 Adaptive Effort supplies the resolved review effort:
 
 ```text
-routine review                  profile.routine_review
-high-risk review                profile.high_risk_review
+routine review                  routine-review model route / profile.routine_review
+high-risk review                high-risk-review model route / profile.high_risk_review
 ```
+
+Each reviewer receives the exact model assigned to its canonical review role, or omits `model` to inherit.
 
 It does not create an independent review lifecycle.
 
@@ -674,10 +679,10 @@ The parent receives a structured summary:
 Implementation unresolved.
 
 Attempts:
-- implementation: route=<actual-effort>/<context> · failed X
-- semantic correction: route=<retained-effort>/same-thread · failed Y
-- debugger: route=<profile.debugger>/fresh · mode=<mode> · identified Z
-- recovery diagnostician: route=<profile.recovery>/fresh · contract likely conflicts with A
+- implementation: route=<model-or-inherited>/<actual-effort>/<context> · failed X
+- semantic correction: route=<retained-model>/<retained-effort>/same-thread · failed Y
+- debugger: route=<model-or-inherited>/<profile.debugger>/fresh · mode=<mode> · identified Z
+- recovery diagnostician: route=<model-or-inherited>/<profile.recovery>/fresh · contract likely conflicts with A
 
 Recommended action:
 Return to planning and revisit assumption B.
@@ -749,9 +754,15 @@ Do this directly; don't delegate.
 Keep implementation at Low.
 
 Do not escalate above Medium.
+
+Use gpt-5.6-terra for the implementer.
 ```
 
 Task-local language affects only that workflow unless the user explicitly requests a persistent preference.
+
+Effort and model assignments use the same canonical roles: `implementer`, `routine-review`, `high-risk-review`, `debugger`, and `recovery`. Effort values are validated against the supported effort vocabulary. Model values are non-empty exact IDs and are not aliases. Each assignment patches only its matching field; unassigned efforts retain the mode default and unassigned models inherit the parent.
+
+An explicit recovery model or effort assignment gives Fast the provenance required to consider recovery. Independent contract/design evidence is still required before dispatch. If the active host rejects a requested model or model/effort combination, stop and report its error instead of substituting another route.
 
 Normal development should not require manually naming worker agents.
 
@@ -784,7 +795,7 @@ parent_model
 parent_effort
 ```
 
-and should not pin child models by default.
+and should not pin child models in built-in defaults. A task-local exact model assignment is passed only to its matching child role.
 
 ---
 
@@ -817,6 +828,7 @@ It becomes applicable when:
 - verification has failed and escalation is being considered
 - a Superpowers reviewer requires an effort policy
 - the user explicitly asks for Adaptive Effort behavior
+- the user asks to inspect the resolved Adaptive Effort plan or available worker models for an approved task
 
 It should not independently trigger to:
 
@@ -826,6 +838,8 @@ It should not independently trigger to:
 - decompose every request
 - replace Superpowers
 - perform generic model routing
+
+Read-only route inspection does not dispatch a child. It returns all five resolved role routes plus picker-visible candidates reported by the local Codex client. The output identifies that client executable and version, and labels the candidate list as advisory because the active spawn host is the final compatibility authority.
 
 The core instruction is:
 
@@ -883,7 +897,7 @@ Example:
 
 ```text
 Adaptive Effort
-Implementer: inherited model / Low
+Implementer: exact override or inherited model / Low
 Mode: balanced
 Context: fresh
 ```
@@ -892,7 +906,7 @@ Escalation:
 
 ```text
 Adaptive Effort: same-effort repair failed deterministic verification;
-starting role=debugger · route=<actual-mode-routed-effort>/fresh · mode=<mode>.
+starting role=debugger · route=<model-or-inherited>/<actual-mode-routed-effort>/fresh · mode=<mode>.
 ```
 
 Conceptual failure:
@@ -978,7 +992,9 @@ Verify:
 - skill metadata
 - skill presentation metadata
 - Python script syntax
-- child models are unpinned
+- built-in child model defaults are unpinned
+- exact task-local model overrides pass through unchanged
+- rejected model/effort combinations do not silently fall back
 - no parent model/effort settings
 - no global filesystem assumptions
 
@@ -1064,7 +1080,8 @@ Verify:
 ```text
 parent model unchanged
 parent effort unchanged
-child model inherited
+unassigned child role inherits parent model
+assigned child role receives the exact model ID
 child effort follows role policy
 ```
 
@@ -1133,7 +1150,8 @@ The plugin snapshot contains:
 - task-local `profile.implementer`, `profile.routine_review`, `profile.high_risk_review`, `profile.debugger`, and `profile.recovery` routes
 - Fast recovery provenance through `profile.recovery_explicitly_requested`
 - evidence-gated recovery in every mode
-- inherited child model
+- inherited child model defaults with exact task-local role overrides
+- local routing-plan inspection with advisory model candidates
 - fresh-context handoff policy
 - one same-effort repair
 - bounded escalation
@@ -1245,7 +1263,7 @@ Adaptive Effort is successful when:
 3. Superpowers remains the authoritative engineering workflow.
 4. Users do not manually manage ordinary implementation/debugger agents.
 5. Parent model and effort remain exactly as selected by the user.
-6. Child models inherit the parent model.
+6. Unassigned child roles inherit the parent model; assigned roles receive the exact task-local model ID.
 7. Routine implementation normally runs at Low effort.
 8. Escalation occurs in response to verification evidence.
 9. Child context remains compact as the parent conversation grows.

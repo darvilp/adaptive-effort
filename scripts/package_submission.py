@@ -26,6 +26,7 @@ SUBMISSION_MANIFEST = (
     ("skills/adaptive-effort/references/superpowers-integration.md", 0o644),
     ("skills/adaptive-effort/scripts/doctor.py", 0o644),
     ("skills/adaptive-effort/scripts/policy.py", 0o644),
+    ("skills/adaptive-effort/scripts/routing_plan.py", 0o644),
 )
 SUBMISSION_MODES = dict(SUBMISSION_MANIFEST)
 SUBMISSION_FILES = frozenset(SUBMISSION_MODES)

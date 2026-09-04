@@ -1,10 +1,11 @@
 # Compatibility snapshot
 
-Snapshot date: 2026-08-28
+Snapshot date: 2026-09-03
 
 ## Required capabilities
 
 - Codex subagents enabled
+- `spawn_agent` with an optional exact model override
 - `spawn_agent` with an explicit reasoning-effort override
 - a fresh-context spawn option (`fork_turns="none"` or older equivalent)
 - Superpowers skills equivalent to:
@@ -21,7 +22,7 @@ The Codex app and CLI support plugins. Codex IDE extensions do not currently sup
 
 ## Custom-agent packaging
 
-Current plugin manifests do not support installing standalone `.codex/agents/*.toml` definitions. Adaptive Effort therefore uses explicit `reasoning_effort`, inherited model, fresh context, and role instructions in each spawn message without requiring an agent-type field.
+Current plugin manifests do not support installing standalone `.codex/agents/*.toml` definitions. Adaptive Effort therefore uses explicit `reasoning_effort`, an exact model only when the task assigns one, fresh context, and role instructions in each spawn message without requiring an agent-type field. Omitting the model argument preserves inheritance.
 
 ## Superpowers target
 
@@ -40,6 +41,8 @@ Unknown Superpowers versions may run when required skills are present, but diagn
 
 - A skill cannot guarantee the host exposes model, effort, or context metadata for post-spawn inspection. Record host or UI metadata separately when it is available.
 - Explicit spawn effort can be unavailable in some product surfaces or model configurations.
+- `routing_plan.py` discovers picker-visible candidates through the `codex` executable on the local `PATH`. That catalog may not match a Desktop, IDE, remote, or otherwise different active spawn host.
+- Candidate discovery is advisory. The active spawn host validates an exact model/effort combination at dispatch, and a rejection stops the route without fallback.
 - The doctor script can inspect local installation and configuration but cannot prove runtime routing without a live smoke spawn.
 - The parent sandbox and approval mode are inherited by subagents.
 

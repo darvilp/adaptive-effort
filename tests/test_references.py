@@ -38,6 +38,27 @@ class ReferenceTests(unittest.TestCase):
         self.assertIn("overrides=<canonical-role:effort,...>", skill)
         self.assertIn("overrides=<canonical-role:effort,...>", routing)
 
+    def test_task_local_model_overrides_have_one_consistent_contract(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text()
+        routing = (SKILL_ROOT / "references/routing-policy.md").read_text()
+        for text in (skill, routing):
+            self.assertIn("exact model ID", text)
+            self.assertIn("Unspecified roles inherit the parent model", text)
+            self.assertIn("Model and effort overrides resolve independently", text)
+            self.assertIn("model-only recovery assignment", text)
+            self.assertIn("active spawn host", text)
+            self.assertIn("no silent fallback", text)
+        self.assertIn("scripts/routing_plan.py", skill)
+        self.assertIn("local-client candidates", skill)
+
+    def test_model_override_guidance_preserves_fresh_context_and_role_effort(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text()
+        spawn = skill.split("### Spawn mechanics", 1)[1].split("## Per-task flow", 1)[0]
+        self.assertIn('set `fork_turns="none"`', spawn)
+        self.assertIn("set `reasoning_effort` to the resolved role effort", spawn)
+        self.assertIn("Set `model` to the exact resolved role override when present", spawn)
+        self.assertIn("Omit `model` when that role has no model override", spawn)
+
     def test_operational_flow_consumes_one_resolved_profile(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text()
         routing = (SKILL_ROOT / "references/routing-policy.md").read_text()
@@ -278,17 +299,17 @@ class ReferenceTests(unittest.TestCase):
         )[0]
 
         self.assertIn(
-            "role=debugger · route=<actual-mode-routed-effort>/fresh · mode=<mode>",
+            "role=debugger · route=<model-or-inherited>/<actual-mode-routed-effort>/fresh · mode=<mode>",
             visible_trace,
         )
         self.assertNotIn("fresh medium debugger", visible_trace.lower())
         self.assertNotIn("low repair failed", visible_trace.lower())
         self.assertIn(
-            "- debugger: route=<profile.debugger>/fresh · mode=<mode> · <outcome>",
+            "- debugger: route=<model-or-inherited>/<profile.debugger>/fresh · mode=<mode> · <outcome>",
             stop_report,
         )
         self.assertIn(
-            "- recovery diagnostician: route=<profile.recovery>/fresh · <outcome|not-used>",
+            "- recovery diagnostician: route=<model-or-inherited>/<profile.recovery>/fresh · <outcome|not-used>",
             stop_report,
         )
         self.assertNotIn("- medium debugger:", stop_report.lower())

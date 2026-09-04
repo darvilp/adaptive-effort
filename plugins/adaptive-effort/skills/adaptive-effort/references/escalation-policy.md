@@ -104,10 +104,10 @@ Evidence:
 - <command/test and result>
 
 Attempts:
-- implementation: route=<actual-effort>/<context> · <outcome>
-- semantic correction: route=<retained-effort>/same-thread · <outcome>
-- debugger: route=<profile.debugger>/fresh · mode=<mode> · <outcome>
-- recovery diagnostician: route=<profile.recovery>/fresh · <outcome|not-used>
+- implementation: route=<model-or-inherited>/<actual-effort>/<context> · <outcome>
+- semantic correction: route=<retained-model>/<retained-effort>/same-thread · <outcome>
+- debugger: route=<model-or-inherited>/<profile.debugger>/fresh · mode=<mode> · <outcome>
+- recovery diagnostician: route=<model-or-inherited>/<profile.recovery>/fresh · <outcome|not-used>
 
 Classification:
 <environment | context | implementation | design>

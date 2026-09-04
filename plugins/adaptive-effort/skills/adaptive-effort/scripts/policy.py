@@ -66,6 +66,22 @@ class EffortOverrides:
 
 
 @dataclass(frozen=True)
+class ModelOverrides:
+    implementer: str | None = None
+    routine_review: str | None = None
+    high_risk_review: str | None = None
+    debugger: str | None = None
+    recovery: str | None = None
+
+    def __post_init__(self) -> None:
+        for model in asdict(self).values():
+            if model is not None and (
+                not isinstance(model, str) or not model or model != model.strip()
+            ):
+                raise ValueError(f"invalid model override: {model!r}")
+
+
+@dataclass(frozen=True)
 class RoutingProfile:
     implementer: Effort
     routine_review: Effort
@@ -82,7 +98,11 @@ def validate_effort_caps(
     overrides = asdict(effort_overrides)
     for role, cap in asdict(effort_caps).items():
         effort = overrides[role]
-        if cap is not None and effort is not None and EFFORT_RANK[effort] > EFFORT_RANK[cap]:
+        if (
+            cap is not None
+            and effort is not None
+            and EFFORT_RANK[effort] > EFFORT_RANK[cap]
+        ):
             public_role = PUBLIC_EFFORT_KEYS[role]
             raise ValueError(
                 f"effort override conflicts with cap: {public_role}={effort} exceeds {cap}"
@@ -95,7 +115,44 @@ class Route:
     role: str
     reasoning_effort: str
     fork_turns: str = "none"
-    model: None = None
+    model: str | None = None
+
+
+def parse_effort_assignments(assignments: list[str]) -> EffortOverrides:
+    values: dict[str, str] = {}
+    for assignment in assignments:
+        key, separator, effort = assignment.partition("=")
+        if not separator or key not in EFFORT_KEYS or effort not in EFFORTS:
+            raise ValueError(
+                "must be ROLE=EFFORT using a canonical role and one of "
+                "low, medium, high, xhigh, max, ultra"
+            )
+        field = EFFORT_KEYS[key]
+        if field in values:
+            raise ValueError(f"duplicate assignment for {key}")
+        values[field] = effort
+    return EffortOverrides(**values)
+
+
+def parse_model_assignments(assignments: list[str]) -> ModelOverrides:
+    values: dict[str, str] = {}
+    for assignment in assignments:
+        key, separator, model = assignment.partition("=")
+        if (
+            not separator
+            or key not in EFFORT_KEYS
+            or not model
+            or model != model.strip()
+        ):
+            raise ValueError(
+                "must be ROLE=MODEL_ID using a canonical role and an exact, "
+                "non-empty model ID"
+            )
+        field = EFFORT_KEYS[key]
+        if field in values:
+            raise ValueError(f"duplicate assignment for {key}")
+        values[field] = model
+    return ModelOverrides(**values)
 
 
 def repair_effort(current_writer_route: Route) -> str:
@@ -106,7 +163,10 @@ def repair_effort(current_writer_route: Route) -> str:
 
 
 def resolve_profile(
-    mode: Mode = "balanced", *, effort_overrides: EffortOverrides | None = None
+    mode: Mode = "balanced",
+    *,
+    effort_overrides: EffortOverrides | None = None,
+    model_overrides: ModelOverrides | None = None,
 ) -> RoutingProfile:
     if mode not in {"fast", "balanced", "deep"}:
         raise ValueError(f"unsupported mode: {mode}")
@@ -115,17 +175,21 @@ def resolve_profile(
         "balanced": RoutingProfile("low", "medium", "high", "medium", "high"),
         "deep": RoutingProfile("medium", "high", "high", "high", "high"),
     }[mode]
-    if effort_overrides is None:
+    if effort_overrides is None and model_overrides is None:
         return defaults
     values = asdict(defaults)
-    values.update(
-        {
-            role: effort
-            for role, effort in asdict(effort_overrides).items()
-            if effort is not None
-        }
+    if effort_overrides is not None:
+        values.update(
+            {
+                role: effort
+                for role, effort in asdict(effort_overrides).items()
+                if effort is not None
+            }
+        )
+    values["recovery_explicitly_requested"] = bool(
+        (effort_overrides is not None and effort_overrides.recovery is not None)
+        or (model_overrides is not None and model_overrides.recovery is not None)
     )
-    values["recovery_explicitly_requested"] = effort_overrides.recovery is not None
     return RoutingProfile(**values)
 
 
@@ -135,8 +199,13 @@ def route(
     risk: Risk = "routine",
     *,
     effort_overrides: EffortOverrides | None = None,
+    model_overrides: ModelOverrides | None = None,
 ) -> Route:
-    profile = resolve_profile(mode, effort_overrides=effort_overrides)
+    profile = resolve_profile(
+        mode,
+        effort_overrides=effort_overrides,
+        model_overrides=model_overrides,
+    )
     if role not in {
         "implementer",
         "debugger",
@@ -148,14 +217,21 @@ def route(
         raise ValueError(f"unsupported risk: {risk}")
 
     if role == "reviewer":
-        effort = profile.high_risk_review if risk == "high" else profile.routine_review
+        profile_field = "high_risk_review" if risk == "high" else "routine_review"
     else:
-        effort = getattr(profile, role)
+        profile_field = role
+    effort = getattr(profile, profile_field)
+    model = (
+        getattr(model_overrides, profile_field)
+        if model_overrides is not None
+        else None
+    )
 
     return Route(
         mode=mode,
         role=role,
         reasoning_effort=effort,
+        model=model,
     )
 
 
@@ -165,6 +241,7 @@ def failure_route(
     mode: Mode = "balanced",
     independent_contract_design_evidence: bool = False,
     effort_overrides: EffortOverrides | None = None,
+    model_overrides: ModelOverrides | None = None,
 ) -> CorrectiveRoute:
     """Map a classified failure to the next policy route."""
     if mode not in {"fast", "balanced", "deep"}:
@@ -178,7 +255,11 @@ def failure_route(
     if classification == "implementation-reasoning defect":
         return "debugger"
     if classification == "contract/design defect":
-        profile = resolve_profile(mode, effort_overrides=effort_overrides)
+        profile = resolve_profile(
+            mode,
+            effort_overrides=effort_overrides,
+            model_overrides=model_overrides,
+        )
         if mode == "fast" and not profile.recovery_explicitly_requested:
             return "stop"
         return "recovery" if independent_contract_design_evidence else "stop"
@@ -206,23 +287,33 @@ def main() -> int:
         metavar="ROLE=EFFORT",
         help="override implementer, routine-review, high-risk-review, debugger, or recovery",
     )
+    parser.add_argument(
+        "--model",
+        action="append",
+        default=[],
+        metavar="ROLE=MODEL_ID",
+        help="override implementer, routine-review, high-risk-review, debugger, or recovery",
+    )
     args = parser.parse_args()
-    override_values: dict[str, str] = {}
-    for assignment in args.effort:
-        key, separator, effort = assignment.partition("=")
-        if not separator or key not in EFFORT_KEYS or effort not in EFFORTS:
-            parser.error(
-                "--effort must be ROLE=EFFORT using a canonical role and one of "
-                "low, medium, high, xhigh, max, ultra"
-            )
-        field = EFFORT_KEYS[key]
-        if field in override_values:
-            parser.error(f"duplicate --effort assignment for {key}")
-        override_values[field] = effort
-    overrides = EffortOverrides(**override_values)
+    try:
+        overrides = parse_effort_assignments(args.effort)
+    except ValueError as error:
+        parser.error(f"--effort {error}")
+    try:
+        model_overrides = parse_model_assignments(args.model)
+    except ValueError as error:
+        parser.error(f"--model {error}")
     print(
         json.dumps(
-            asdict(route(args.mode, args.role, args.risk, effort_overrides=overrides)),
+            asdict(
+                route(
+                    args.mode,
+                    args.role,
+                    args.risk,
+                    effort_overrides=overrides,
+                    model_overrides=model_overrides,
+                )
+            ),
             indent=2,
             sort_keys=True,
         )

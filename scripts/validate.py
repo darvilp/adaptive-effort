@@ -55,6 +55,7 @@ POLICY = runpy.run_path(str(POLICY_PATH))
 POLICY_ROUTE = POLICY["route"]
 FAILURE_ROUTE = POLICY["failure_route"]
 EFFORT_OVERRIDES = POLICY["EffortOverrides"]
+MODEL_OVERRIDES = POLICY["ModelOverrides"]
 VALIDATE_EFFORT_CAPS = POLICY["validate_effort_caps"]
 REPAIR_EFFORT = POLICY["repair_effort"]
 RECOVERY_QUALIFIER = "only with independent contract/design evidence"
@@ -181,6 +182,19 @@ FORBIDDEN_UNCONDITIONAL_ROUTING = (
     "Fast has no automatic recovery transition.",
     "- recovery diagnostician: route=high/fresh",
 )
+MODEL_OVERRIDE_CONTRACT_PHRASES = (
+    "exact model ID",
+    "Unspecified roles inherit the parent model",
+    "Model and effort overrides resolve independently",
+    "model-only recovery assignment",
+    "active spawn host",
+    "no silent fallback",
+)
+FORBIDDEN_UNCONDITIONAL_MODEL_ROUTING = (
+    "Child model is always inherited",
+    "Child model is inherited by omitting `model`",
+    "Omit `model` on child spawns",
+)
 
 
 def fail(message: str) -> None:
@@ -293,7 +307,9 @@ def validate() -> list[str]:
         fail("skill description missing")
     required_phrases = [
         "Do not alter the parent model",
-        "omit `model`",
+        "Set `model` to the exact resolved role override when present",
+        "Omit `model` when that role has no model override",
+        "scripts/routing_plan.py",
         'fork_turns="none"',
         "one semantic same-thread correction",
         "followup_task",
@@ -305,7 +321,7 @@ def validate() -> list[str]:
     for phrase in required_phrases:
         if phrase not in text:
             fail(f"skill missing policy phrase: {phrase}")
-    forbidden = ["reasoning_effort:  xhigh", "reasoning_effort:  max", "model: gpt-", "agent_type:"]
+    forbidden = ["reasoning_effort:  xhigh", "reasoning_effort:  max", "agent_type:"]
     lowered = text.lower()
     for phrase in forbidden:
         if phrase in lowered:
@@ -329,7 +345,7 @@ def validate() -> list[str]:
         if phrase not in agent_text:
             fail(f"skill agent manifest missing: {phrase}")
 
-    for script in ["doctor.py", "policy.py"]:
+    for script in ["doctor.py", "policy.py", "routing_plan.py"]:
         path = SKILL.parent / "scripts" / script
         if not path.exists():
             fail(f"missing script: {script}")
@@ -466,6 +482,90 @@ def validate() -> list[str]:
         "contract/design defect", mode="fast", independent_contract_design_evidence=True,
     ) != "stop":
         fail("canonical Fast recovery stop rule mismatch")
+    model_override_fixture = load_json(
+        ROOT / "submission/fixtures/task-local-model-overrides.json"
+    )
+    expected_model_assignments = [
+        "implementer=gpt-5.6-terra",
+        "routine-review=gpt-5.6-luna",
+        "high-risk-review=gpt-5.6-sol",
+        "debugger=custom/provider-model",
+        "recovery=gpt-5.6-sol",
+    ]
+    if model_override_fixture != {
+        "mode": "fast",
+        "effortAssignments": ["debugger=xhigh"],
+        "modelAssignments": expected_model_assignments,
+        "routes": [
+            {
+                "name": "implementer",
+                "role": "implementer",
+                "expectedEffort": "low",
+                "expectedModel": "gpt-5.6-terra",
+            },
+            {
+                "name": "routine-review",
+                "role": "reviewer",
+                "risk": "routine",
+                "expectedEffort": "low",
+                "expectedModel": "gpt-5.6-luna",
+            },
+            {
+                "name": "high-risk-review",
+                "role": "reviewer",
+                "risk": "high",
+                "expectedEffort": "high",
+                "expectedModel": "gpt-5.6-sol",
+            },
+            {
+                "name": "debugger",
+                "role": "debugger",
+                "expectedEffort": "xhigh",
+                "expectedModel": "custom/provider-model",
+            },
+            {
+                "name": "recovery",
+                "role": "recovery",
+                "expectedEffort": "high",
+                "expectedModel": "gpt-5.6-sol",
+            },
+        ],
+        "fastRecoveryModelOnly": "gpt-5.6-sol",
+    }:
+        fail("task-local model override fixture mismatch")
+    model_values = {
+        key.replace("-", "_"): model
+        for key, model in (
+            assignment.split("=", 1)
+            for assignment in model_override_fixture["modelAssignments"]
+        )
+    }
+    model_overrides = MODEL_OVERRIDES(**model_values)
+    model_effort_overrides = EFFORT_OVERRIDES(debugger="xhigh")
+    for route in model_override_fixture["routes"]:
+        actual = POLICY_ROUTE(
+            model_override_fixture["mode"],
+            route["role"],
+            route.get("risk", "routine"),
+            effort_overrides=model_effort_overrides,
+            model_overrides=model_overrides,
+        )
+        if actual.model != route["expectedModel"] or actual.reasoning_effort != route["expectedEffort"]:
+            fail("task-local model override fixture route mismatch")
+    recovery_model_overrides = MODEL_OVERRIDES(
+        recovery=model_override_fixture["fastRecoveryModelOnly"]
+    )
+    if FAILURE_ROUTE(
+        "contract/design defect",
+        mode="fast",
+        model_overrides=recovery_model_overrides,
+    ) != "stop" or FAILURE_ROUTE(
+        "contract/design defect",
+        mode="fast",
+        independent_contract_design_evidence=True,
+        model_overrides=recovery_model_overrides,
+    ) != "recovery":
+        fail("task-local model override fixture Fast recovery mismatch")
     portal = (ROOT / "submission/portal-checklist.md").read_text(encoding="utf-8")
     for gate in ("Apps Management Write", "verified `darvilp` identity", "Skills only draft", "exact CI submission artifact", "successful skill scan", "attestations only after", "Submit for Review", "Publish manually", "new-task pickup", "live routing"):
         if gate not in portal:
@@ -522,6 +622,21 @@ def validate() -> list[str]:
                 fail(
                     "routing policy consumer contains unconditional fixed routing in "
                     f"{path.relative_to(ROOT)}: {stale}"
+                )
+        for stale in FORBIDDEN_UNCONDITIONAL_MODEL_ROUTING:
+            if stale.lower() in consumer.lower():
+                fail(
+                    "model override contract contains unconditional inheritance in "
+                    f"{path.relative_to(ROOT)}: {stale}"
+                )
+
+    for path in (SKILL, SKILL.parent / "references/routing-policy.md"):
+        consumer = path.read_text(encoding="utf-8")
+        for phrase in MODEL_OVERRIDE_CONTRACT_PHRASES:
+            if phrase not in consumer:
+                fail(
+                    "model override contract missing from "
+                    f"{path.relative_to(ROOT)}: {phrase}"
                 )
 
     routing_guidance = {

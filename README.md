@@ -16,7 +16,7 @@ Adaptive Effort
   local repair: same thread, once; retains the actual writer route
   debugger: profile.debugger
   recovery diagnosis: profile.recovery, after authorization
-  child model: inherited
+  child model: exact task-local role override, otherwise inherited
   child context: fresh and compact
 ```
 
@@ -50,11 +50,11 @@ A same-thread repair is not a new worker. It retains the effort of the implement
 4. Superpowers runs specification review before code-quality review.
 5. Review findings are corrected and re-reviewed.
 6. Final verification uses fresh evidence before completion.
-7. Adaptive Effort changes the child effort, compact handoff, failure classification, and bounded repair/escalation route; it does not decide how many workers Superpowers creates.
+7. Adaptive Effort changes the child model and effort routes, compact handoff, failure classification, and bounded repair/escalation route; it does not decide how many workers Superpowers creates.
 
 Worker count and aggregate usage are optional AAR observations, not routing inputs or promises of per-agent accounting.
 
-Superpowers chooses task decomposition, writer topology, parallelism, execution boundaries, reviews, and acceptance gates. Adaptive Effort supplies child effort and context, compact handoffs, failure classification, escalation counting, circuit breakers, and closeout. Planned medium/high reviews do not count as escalations; only corrective upward effort transitions do.
+Superpowers chooses task decomposition, writer topology, parallelism, execution boundaries, reviews, and acceptance gates. Adaptive Effort supplies child model, effort, and context, compact handoffs, failure classification, escalation counting, circuit breakers, and closeout. Planned medium/high reviews do not count as escalations; only corrective upward effort transitions do.
 
 The parent keeps a human-readable routing trace for the current run. It separates worker status from downstream gate status and carries Superpowers-defined boundary results in adjacent detail lines. Semantic failures record a fingerprint before correction or escalation. The trace is ephemeral, not a ledger API or telemetry system.
 
@@ -121,7 +121,13 @@ Use deep handling for this.
 Do this directly; don't delegate.
 Keep implementation at Low.
 Do not escalate above Medium.
+Use gpt-5.6-terra for the implementer.
+Use model implementer=gpt-5.6-terra debugger=gpt-5.6-sol for this task.
 ```
+
+Model assignments use the same five roles as effort assignments: `implementer`, `routine-review`, `high-risk-review`, `debugger`, and `recovery`. Values are exact model IDs. Unspecified roles inherit the parent model, and model and effort assignments resolve independently. Adaptive Effort never aliases or silently substitutes a requested model.
+
+To inspect all five resolved routes and the models reported by the local Codex client before dispatch, ask for the current Adaptive Effort routing plan and available worker models. The result identifies the executable and version used for discovery. Its catalog is advisory: the active spawn host remains the final compatibility authority.
 
 The IDE or Desktop model/effort selector remains authoritative for the parent.
 
@@ -156,7 +162,8 @@ python3 /absolute/path/to/installed/adaptive-effort/skills/adaptive-effort/scrip
 
 This skills-only snapshot uses only supported plugin surfaces:
 
-- Plugins currently bundle skills, but not standalone custom-agent TOML files. Role behavior and effort are passed through `spawn_agent`.
+- Plugins currently bundle skills, but not standalone custom-agent TOML files. Role behavior and resolved model/effort values are passed through `spawn_agent`.
+- The routing-plan command can report picker-visible candidates from the local Codex client. It cannot prove that another Desktop, IDE, or remote spawn host supports the same model/effort combination.
 - Codex IDE extensions do not currently support plugins. Use the Codex app or CLI for Adaptive Effort.
 - A live smoke spawn verifies the child spawn/tool path. Proving the child's model, effort, or context metadata requires separate direct host or UI evidence.
 - Adaptive Effort does not choose worker count or report per-agent token accounting. Available usage and worker-count observations may be included in a run report without becoming routing inputs.

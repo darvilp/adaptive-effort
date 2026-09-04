@@ -86,6 +86,23 @@ Repeat with non-default assignments for all five roles. Confirm each dispatch us
 
 Use a Superpowers-selected high-risk review after straight-through implementation. Confirm the review dispatch uses `purpose=planned-review` and the closeout still reports zero escalations. A planned High route is not a corrective transition.
 
+## 2d. Task-local model routing and inspection
+
+For an approved task, request exact model assignments for all five roles and a non-default effort for at least one role. Ask for the current Adaptive Effort routing plan and available worker models before dispatch.
+
+Confirm:
+
+- all five routes appear, including distinct routine and high-risk review routes
+- each explicit model ID is preserved exactly
+- model and effort assignments resolve independently
+- unassigned roles show inherited model routing
+- the local-client catalog is not truncated and includes its source executable and version
+- the catalog is labeled advisory and the active spawn host remains authoritative
+- an exact model absent from the catalog proceeds to host validation without local rejection or substitution
+- an unavailable or malformed catalog still returns the resolved routing plan
+
+In Fast, supply only a recovery model assignment. Confirm it sets explicit recovery provenance but still cannot dispatch recovery without independent contract/design evidence.
+
 ## 3. Cheap repair
 
 Use a fixture or temporary branch where the first implementation is likely to produce a simple deterministic failure.
@@ -175,7 +192,8 @@ Repeat a small task with parent UI effort set to Medium, then High.
 Confirm:
 
 - parent selection remains unchanged
-- child model inherits parent model
+- a child role without a model assignment inherits the parent model
+- a child role with a model assignment receives the exact requested ID when the active host accepts it
 - implementation still follows the Adaptive Effort role policy
 
 ## Record

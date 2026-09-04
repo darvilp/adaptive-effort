@@ -3,7 +3,8 @@
 ## Invariants
 
 - Parent model and effort remain user-controlled.
-- Child model is inherited by omitting `model`.
+- Unspecified roles inherit the parent model by omitting `model`.
+- Explicit role model overrides pass the user's exact model ID unchanged.
 - Child context is fresh unless a concrete dependency requires a small recent-turn fork.
 - `xhigh`, `max`, and `ultra` are not selected automatically.
 - Superpowers workflow requirements outrank cost-saving preferences.
@@ -53,11 +54,12 @@ Adaptive Effort records a dispatch purpose as `implementation`, `planned-review`
 ## Spawn defaults
 
 These are dispatch mechanics. Effort always comes from the resolved profile.
+Model comes from the matching role override, or is omitted for inheritance.
 
 ### Implementer
 
 ```text
-model: omit
+model: exact `implementer` override, otherwise omit
 reasoning_effort: `profile.implementer`
 fork_turns: none
 ```
@@ -65,7 +67,7 @@ fork_turns: none
 ### Debugger
 
 ```text
-model: omit
+model: exact `debugger` override, otherwise omit
 reasoning_effort: `profile.debugger`
 fork_turns: none
 ```
@@ -73,16 +75,17 @@ fork_turns: none
 ### Recovery diagnostician
 
 ```text
-model: omit
+model: exact `recovery` override, otherwise omit
 reasoning_effort: `profile.recovery`
 fork_turns: none
 ```
 
 ### Reviewer
 
-Use the role selected by Superpowers. Omit the model and prefer a fresh handoff.
-Use `profile.routine_review` for routine review and `profile.high_risk_review`
-when Superpowers identifies a high-risk review.
+Use the role selected by Superpowers and prefer a fresh handoff. Use the exact
+`routine-review` or `high-risk-review` model override when present; otherwise
+omit `model`. Use `profile.routine_review` for routine review and
+`profile.high_risk_review` when Superpowers identifies a high-risk review.
 
 ## Task-local caps
 
@@ -113,7 +116,8 @@ the resolved profile.
 
 The resolved profile also records `profile.recovery_explicitly_requested`.
 This boolean is false for the Fast default `recovery="high"` and true only when
-the user supplied a recovery assignment. Fast recovery requires this boolean
+the user supplied a recovery effort or model assignment. A model-only recovery assignment
+sets the boolean. Fast recovery requires this boolean
 and independent contract/design evidence.
 
 Repair is not an override role. Same-thread semantic and mechanical repairs
@@ -122,11 +126,26 @@ debugger, or recovery writer effort. Explicit high efforts do not alter the
 automatic policy: Adaptive Effort still never selects `xhigh`, `max`, or
 `ultra` unless the user assigns one.
 
-Check host/model compatibility before dispatch when the host exposes it. Stop
-and report an unsupported requested combination rather than silently lowering
-or replacing the effort.
+## Task-local model profiles
 
-Fast recovery remains evidence-gated. An explicit `recovery` assignment allows
+The model override keys are the same five canonical roles as effort overrides.
+Each value is an exact model ID. Unspecified roles inherit the parent model.
+Model and effort overrides resolve independently, and repairs remain on the
+actual writer thread so they retain both values. Reject unknown roles, empty
+values, surrounding whitespace, and duplicate assignments. Do not create
+friendly aliases or pin a model in any mode default.
+
+The routing-plan command reports local-client candidates from `codex debug
+models`, including their supported efforts. This is selection help, not runtime
+proof: the executable on `PATH` may differ from the Desktop or IDE process. The
+active spawn host is authoritative. An unlisted exact model proceeds to host
+validation; a host rejection stops the route with no silent fallback.
+
+Check host/model compatibility before dispatch when the active host exposes it.
+Stop and report an unsupported requested combination rather than silently
+lowering or replacing the model or effort.
+
+Fast recovery remains evidence-gated. An explicit `recovery` model or effort assignment allows
 the recovery role only after independent contract/design evidence; without
 that evidence, stop. Without an explicit recovery assignment, Fast stops before
 recovery as usual.
@@ -135,4 +154,10 @@ Append active values to the initial trace in canonical role order:
 
 ```text
 Adaptive Effort: <mode> · implementer inherited-model/<effort> · fresh context · overrides=<canonical-role:effort,...>
+```
+
+For model or mixed overrides, use:
+
+```text
+Adaptive Effort: <mode> · implementer <model-or-inherited>/<effort> · fresh context · model-overrides=<canonical-role:model,...> · effort-overrides=<canonical-role:effort,...>
 ```

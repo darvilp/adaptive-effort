@@ -1,6 +1,6 @@
 # Adaptive Effort
 
-Adaptive Effort is a skills-only Codex plugin that adds reasoning-effort routing and bounded escalation to Superpowers implementation workflows.
+Adaptive Effort is a skills-only Codex plugin that adds task-local child model and reasoning-effort routing with bounded escalation to Superpowers implementation workflows.
 
 It keeps the parent model and effort selected by the user. This example shows the Balanced no-override defaults:
 
@@ -58,7 +58,12 @@ Use fast handling for this.
 Use deep handling for this.
 Do this directly; don't delegate.
 Do not escalate above Medium.
+Use gpt-5.6-terra for the implementer.
 ```
+
+Model overrides accept exact IDs for `implementer`, `routine-review`, `high-risk-review`, `debugger`, and `recovery`. Unspecified roles inherit the parent model. Model and effort assignments are independent, and an unsupported explicit combination stops at host validation without silent substitution.
+
+Ask for the current Adaptive Effort routing plan and available worker models to get all five resolved routes plus picker-visible candidates from the local Codex client. The command records its executable and version; the active spawn host remains authoritative.
 
 ## Setup check
 
@@ -85,6 +90,6 @@ python3 /absolute/path/to/installed/adaptive-effort/skills/adaptive-effort/scrip
 
 ## Important platform note
 
-The current plugin manifest format does not install custom Codex agent TOMLs. Adaptive Effort supplies explicit `reasoning_effort`, inherited model, fresh context, and role instructions on each spawn without requiring an agent-type field.
+The current plugin manifest format does not install custom Codex agent TOMLs. Adaptive Effort supplies explicit `reasoning_effort`, an exact task-local model when assigned, fresh context, and role instructions on each spawn without requiring an agent-type field. It omits the model argument for roles that should inherit.
 
 Codex IDE extensions do not currently support plugins. Use the Codex app or CLI for Adaptive Effort.

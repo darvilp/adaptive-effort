@@ -61,6 +61,80 @@ class PolicyTests(unittest.TestCase):
             ).recovery_explicitly_requested
         )
 
+    def test_model_overrides_replace_only_named_roles(self) -> None:
+        overrides = policy.ModelOverrides(
+            implementer="gpt-5.6-terra",
+            routine_review="gpt-5.6-luna",
+            recovery="provider/model-v2",
+        )
+        self.assertEqual(
+            policy.route(
+                "balanced", "implementer", model_overrides=overrides
+            ).model,
+            "gpt-5.6-terra",
+        )
+        self.assertEqual(
+            policy.route(
+                "balanced", "reviewer", model_overrides=overrides
+            ).model,
+            "gpt-5.6-luna",
+        )
+        self.assertIsNone(
+            policy.route(
+                "balanced", "reviewer", "high", model_overrides=overrides
+            ).model
+        )
+        self.assertIsNone(
+            policy.route("balanced", "debugger", model_overrides=overrides).model
+        )
+        self.assertEqual(
+            policy.route("balanced", "recovery", model_overrides=overrides).model,
+            "provider/model-v2",
+        )
+
+    def test_model_and_effort_overrides_resolve_independently(self) -> None:
+        route = policy.route(
+            "deep",
+            "debugger",
+            effort_overrides=policy.EffortOverrides(debugger="ultra"),
+            model_overrides=policy.ModelOverrides(debugger="gpt-5.6-terra"),
+        )
+        self.assertEqual(route.model, "gpt-5.6-terra")
+        self.assertEqual(route.reasoning_effort, "ultra")
+        self.assertEqual(route.fork_turns, "none")
+
+    def test_model_override_requires_an_exact_nonempty_id(self) -> None:
+        for value in ("", " ", " gpt-5.6-terra", "gpt-5.6-terra "):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                ValueError, "invalid model override"
+            ):
+                policy.ModelOverrides(implementer=value)
+
+    def test_model_only_recovery_override_enables_fast_evidence_gated_recovery(self) -> None:
+        overrides = policy.ModelOverrides(recovery="gpt-5.6-sol")
+        self.assertTrue(
+            policy.resolve_profile(
+                "fast", model_overrides=overrides
+            ).recovery_explicitly_requested
+        )
+        self.assertEqual(
+            policy.failure_route(
+                "contract/design defect",
+                mode="fast",
+                model_overrides=overrides,
+            ),
+            "stop",
+        )
+        self.assertEqual(
+            policy.failure_route(
+                "contract/design defect",
+                mode="fast",
+                independent_contract_design_evidence=True,
+                model_overrides=overrides,
+            ),
+            "recovery",
+        )
+
     def test_effort_cap_conflicts_are_rejected_before_dispatch(self) -> None:
         overrides = policy.EffortOverrides(implementer="high", debugger="low")
         caps = policy.EffortOverrides(implementer="low", debugger="medium")
@@ -192,6 +266,66 @@ class PolicyTests(unittest.TestCase):
         self.assertNotEqual(duplicate.returncode, 0)
         self.assertIn("duplicate", duplicate.stderr.lower())
 
+    def test_cli_accepts_repeatable_model_assignments(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(POLICY_PATH),
+                "--mode", "balanced",
+                "--role", "reviewer",
+                "--risk", "high",
+                "--model", "implementer=gpt-5.6-terra",
+                "--model", "high-risk-review=provider/model-v2",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        route = json.loads(result.stdout)
+        self.assertEqual(route["model"], "provider/model-v2")
+        self.assertEqual(route["reasoning_effort"], "high")
+
+    def test_cli_rejects_invalid_and_duplicate_model_assignments(self) -> None:
+        for assignment in (
+            "reviewer=gpt-5.6-terra",
+            "implementer=",
+            "implementer= gpt-5.6-terra",
+            "implementer=gpt-5.6-terra ",
+            "implementer",
+        ):
+            with self.subTest(assignment=assignment):
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(POLICY_PATH),
+                        "--role", "implementer",
+                        "--model", assignment,
+                    ],
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=False,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("--model", result.stderr)
+        duplicate = subprocess.run(
+            [
+                sys.executable,
+                str(POLICY_PATH),
+                "--role", "implementer",
+                "--model", "implementer=gpt-5.6-terra",
+                "--model", "implementer=gpt-5.6-sol",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertNotEqual(duplicate.returncode, 0)
+        self.assertIn("duplicate", duplicate.stderr.lower())
+
     def test_fast_ladder_prioritizes_cost_and_stops_before_recovery(self) -> None:
         self.assertEqual(policy.route("fast", "implementer").reasoning_effort, "low")
         self.assertEqual(policy.route("fast", "reviewer").reasoning_effort, "low")
@@ -241,7 +375,7 @@ class PolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             policy.route("balanced", "repair")
 
-    def test_model_is_always_inherited_and_context_fresh(self) -> None:
+    def test_unspecified_models_are_inherited_and_context_is_fresh(self) -> None:
         for mode in ("fast", "balanced", "deep"):
             for role in (
                 "implementer",

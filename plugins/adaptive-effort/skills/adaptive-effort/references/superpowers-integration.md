@@ -17,7 +17,7 @@ Superpowers owns:
 Adaptive Effort owns:
 
 - child reasoning-effort selection
-- child model inheritance
+- task-local child model selection or inheritance
 - fresh compact handoffs
 - semantic and mechanical repair accounting
 - failure classification and escalation counting
@@ -51,7 +51,7 @@ Preserve these Superpowers semantics:
 - final verification uses fresh evidence
 - do not pause between ordinary plan tasks solely for confirmation
 
-Adaptive Effort changes the spawn effort and bounds repeated failures. It does not remove the two-stage review.
+Adaptive Effort changes the spawn model when explicitly assigned, changes the spawn effort, and bounds repeated failures. It does not remove the two-stage review.
 
 Carry only Superpowers-defined execution boundaries. Adaptive Effort records their evidence and results but does not add, remove, merge, defer, or declare them not applicable. If expected evidence is absent, classify that as missing context rather than an implementation defect. Use one bundled same-thread context continuation per worker dispatch to supply all currently available items. It does not raise effort and does not consume the semantic or mechanical correction allowance. If evidence remains unavailable, supplying it needs new authority, or the worker makes any second context request, including for a newly revealed item, stop automatic handling with a blocked gate and a missing-context closeout.
 
@@ -63,7 +63,7 @@ The parent or an independent review step should ensure the implementer did not w
 
 ## Reviews
 
-Superpowers decides which reviewers are mandatory. Use `profile.routine_review` for routine review and `profile.high_risk_review` for high-risk review.
+Superpowers decides which reviewers are mandatory. Use `profile.routine_review` and the `routine-review` model route for routine review. Use `profile.high_risk_review` and the `high-risk-review` model route for high-risk review. Omit `model` when the selected review role has no model override.
 
 A planned medium or high reviewer is not an escalation. Only a corrective transition from lower to higher effort after classified failure increments the escalation count.
 
@@ -85,6 +85,6 @@ When instructions appear to conflict:
 1. obey the explicit user instruction
 2. preserve Superpowers quality gates
 3. use Adaptive Effort to choose the least costly effort that satisfies those gates
-4. stop and report if the host cannot express the required child effort
+4. stop and report if the host cannot express the required child model or effort
 
-Do not create duplicate plans, duplicate task trackers, or parallel orchestration trees.
+Do not silently replace a rejected model or effort. Do not create duplicate plans, duplicate task trackers, or parallel orchestration trees.

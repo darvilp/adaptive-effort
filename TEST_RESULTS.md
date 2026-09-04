@@ -1,6 +1,6 @@
 # Test results
 
-Snapshot date: 2026-08-31
+Snapshot date: 2026-09-03
 
 ## Completed
 
@@ -9,7 +9,9 @@ Snapshot date: 2026-08-31
 - one primary implicit skill
 - no unsupported plugin-packaged custom-agent TOMLs
 - parent setting preservation instructions
-- inherited child model policy
+- inherited child model defaults with exact task-local role overrides
+- independent task-local model and effort resolution
+- local routing-plan output with advisory model candidates
 - fresh-context policy
 - fast, balanced, and deep routing matrix
 - low → medium → high bounds
@@ -24,7 +26,7 @@ Snapshot date: 2026-08-31
 - allowlisted repository packaging and exact manifest coverage
 - deterministic ZIP packaging and checksums
 - rejection of forbidden files, special files, and empty forbidden directories
-- exact approved semantics for all eight submission review cases
+- exact approved semantics for the submission review pack
 - deterministic public evidence replay for the same-thread repair and fresh debugger cases
 - planned-review exclusion from escalation counts
 - separate worker and downstream gate outcomes
@@ -45,7 +47,7 @@ Automated suite:
 
 Fresh local verification for this commit:
 
-`scripts/validate.py` passed, and the full unit suite passed. Independent source and submission builds were byte-identical. `sha256sum -c MANIFEST.sha256` passed, and `scripts/verify_submission.py` verified exactly 13 sorted regular files under one `adaptive-effort/` directory. Final dist checks rerun these commands after this evidence update.
+`scripts/validate.py` passed, and the full unit suite passed. Independent source and submission builds were byte-identical. `sha256sum -c MANIFEST.sha256` passed, and `scripts/verify_submission.py` verified the sorted regular files under one `adaptive-effort/` directory. Final package checks rerun these commands after this evidence update.
 
 CI is configured to run validation, the unit suite, independent double builds, checksum checks, submission-structure verification, and artifact upload on a future push or pull request. No CI result is claimed for this unpushed commit.
 
@@ -55,7 +57,7 @@ The 0.1.1 pre-push release acceptance evidence below remains historical. Current
 
 The historical 0.1.1 release archive was `dist/adaptive-effort-plugin-0.1.1.zip`. The 0.1.3 source and submission archive names are `dist/adaptive-effort-source-0.1.3.zip` and `dist/adaptive-effort-plugin-0.1.3.zip`.
 
-`git diff --check` passed. Changed public files contained no CRLF or trailing whitespace. Scans found no publisher placeholder, no active 0.1.0 package command or path, and no tracked generated artifact. The only 0.1.0 archive-name match is a package regression assertion that excludes the obsolete archive. `plugins/adaptive-effort/skills/adaptive-effort/scripts/doctor.py` remains unchanged. `plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py` now differentiates Fast, Balanced, and Deep implementation, review, debugging, and automatic recovery routes.
+`git diff --check` passed. Changed public files contained no CRLF or trailing whitespace. Scans found no publisher placeholder, no active 0.1.0 package command or path, and no tracked generated artifact. The only 0.1.0 archive-name match is a package regression assertion that excludes the obsolete archive. `plugins/adaptive-effort/skills/adaptive-effort/scripts/doctor.py` remains unchanged. `plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py` now differentiates Fast, Balanced, and Deep implementation, review, debugging, and automatic recovery routes. It also resolves exact task-local role model overrides independently from effort. `routing_plan.py` returned all five resolved routes and the complete picker-visible model list from the local Codex client; that catalog remains advisory rather than runtime-host proof.
 
 The doctor CLI regression launches the installed script from its skill directory while passing a separate trusted project through `--project-dir`. A project `.codex/config.toml` that disables agents produces exit 1, `BLOCKED`, and a failing multi-agent check that names the project config. A separate error-path regression proves that a missing or non-directory project target exits 2 before readiness is computed.
 

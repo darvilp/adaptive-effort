@@ -112,6 +112,46 @@ class SubmissionValidationTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("review case semantics", result.stdout.lower())
 
+    def test_validator_rejects_task_local_model_fixture_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            copy = self.copied_repo(directory)
+            path = copy / "submission/fixtures/task-local-model-overrides.json"
+            fixture = json.loads(path.read_text())
+            fixture["routes"][0]["expectedModel"] = "silently-substituted-model"
+            path.write_text(json.dumps(fixture))
+            result = self.run_validator(copy)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("model override fixture", result.stdout.lower())
+
+    def test_validator_requires_the_routing_plan_command(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            copy = self.copied_repo(directory)
+            command = (
+                copy
+                / "plugins/adaptive-effort/skills/adaptive-effort/scripts/routing_plan.py"
+            )
+            command.unlink()
+            result = self.run_validator(copy)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("routing_plan.py", result.stdout)
+
+    def test_validator_rejects_unconditional_child_model_inheritance(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            copy = self.copied_repo(directory)
+            path = copy / "plugins/adaptive-effort/skills/adaptive-effort/references/routing-policy.md"
+            text = path.read_text()
+            text = text.replace(
+                "Unspecified roles inherit the parent model by omitting `model`.",
+                "Child model is always inherited by omitting `model`.",
+            ).replace(
+                "Explicit role model overrides pass the user's exact model ID unchanged.",
+                "Explicit role model overrides are ignored.",
+            )
+            path.write_text(text)
+            result = self.run_validator(copy)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("model override contract", result.stdout.lower())
+
     def test_task_local_override_review_fixture_is_executable_policy_input(self) -> None:
         fixture = json.loads(
             (ROOT / "submission/fixtures/task-local-effort-overrides.json").read_text()
@@ -177,6 +217,61 @@ class SubmissionValidationTests(unittest.TestCase):
         )
         self.assertEqual(without_evidence, recovery["withoutEvidence"])
         self.assertEqual(with_evidence, recovery["withEvidence"])
+
+    def test_task_local_model_override_fixture_is_executable_policy_input(self) -> None:
+        fixture = json.loads(
+            (ROOT / "submission/fixtures/task-local-model-overrides.json").read_text()
+        )
+        for route in fixture["routes"]:
+            with self.subTest(route=route["name"]):
+                result = subprocess.run(
+                    [
+                        "python3",
+                        "plugins/adaptive-effort/skills/adaptive-effort/scripts/policy.py",
+                        "--mode", fixture["mode"],
+                        "--role", route["role"],
+                        "--risk", route.get("risk", "routine"),
+                        *[
+                            item
+                            for assignment in fixture["effortAssignments"]
+                            for item in ("--effort", assignment)
+                        ],
+                        *[
+                            item
+                            for assignment in fixture["modelAssignments"]
+                            for item in ("--model", assignment)
+                        ],
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                actual = json.loads(result.stdout)
+                self.assertEqual(actual["reasoning_effort"], route["expectedEffort"])
+                self.assertEqual(actual["model"], route["expectedModel"])
+
+        recovery_model = fixture["fastRecoveryModelOnly"]
+        overrides = policy.ModelOverrides(recovery=recovery_model)
+        self.assertEqual(
+            policy.failure_route(
+                "contract/design defect",
+                mode="fast",
+                model_overrides=overrides,
+            ),
+            "stop",
+        )
+        self.assertEqual(
+            policy.failure_route(
+                "contract/design defect",
+                mode="fast",
+                independent_contract_design_evidence=True,
+                model_overrides=overrides,
+            ),
+            "recovery",
+        )
 
     def test_fixed_effort_review_cases_are_labeled_no_override_examples(self) -> None:
         cases = json.loads((ROOT / "submission/review-cases.json").read_text())

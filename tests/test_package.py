@@ -67,11 +67,13 @@ class PackageTests(unittest.TestCase):
         skill_files = list((PLUGIN / "skills").glob("*/SKILL.md"))
         self.assertEqual([p.parent.name for p in skill_files], ["adaptive-effort"])
 
-    def test_skill_keeps_parent_and_inherits_child_model(self) -> None:
+    def test_skill_keeps_parent_and_resolves_task_local_child_models(self) -> None:
         text = (PLUGIN / "skills/adaptive-effort/SKILL.md").read_text()
         self.assertIn("Do not alter the parent model", text)
-        self.assertIn("omit `model`", text)
+        self.assertIn("Set `model` to the exact resolved role override when present", text)
+        self.assertIn("Omit `model` when that role has no model override", text)
         self.assertIn('fork_turns="none"', text)
+        self.assertIn("scripts/routing_plan.py", text)
 
     def test_skill_agent_metadata_allows_implicit_invocation(self) -> None:
         text = (PLUGIN / "skills/adaptive-effort/agents/openai.yaml").read_text()
